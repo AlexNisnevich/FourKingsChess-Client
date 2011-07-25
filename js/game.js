@@ -3,7 +3,7 @@
 //
 
 var squareSize = 48;
-var z = 0;
+var z = 100;
 
 //
 // CLASS DEFINITIONS
@@ -13,8 +13,7 @@ Element.implement({
     object: null,
 
     pushToFront: function() {
-        this.setStyle('z-index', z++);
-        return this;
+		this.setStyle('z-index', z++);
     },
     
     show: function() {
@@ -171,7 +170,6 @@ var Square = new Class({
             'class': 'square',
         });
         this.element.object = this;
-        this.element.pushToFront();
 
         this.element.setStyle('left', ((this.x - 1) * squareSize) + 'px');
         this.element.setStyle('top', ((8 - this.y) * squareSize) + 'px');
@@ -459,7 +457,6 @@ var Piece = new Class({
             'class': 'piece',
         });
         this.element.object = this;
-        this.element.pushToFront();
 
         this.setImage();
         this.addDragEvent();
@@ -486,7 +483,8 @@ var Piece = new Class({
     	    droppables: $$('.square'),
     	
     	    onStart: function(draggable) {
-    	        draggable.pushToFront().addClass('grabbing');
+    			draggable.pushToFront();
+    	        draggable.addClass('grabbing');
     	        
     	        var piece = draggable.object;
     	        
