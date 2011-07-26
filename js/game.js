@@ -6,7 +6,7 @@ var squareSize = 48;
 var z = 100;
 
 //
-// CLASS DEFINITIONS
+// CLASS OVERRIDES
 //
 
 Element.implement({
@@ -29,92 +29,152 @@ Element.implement({
     }
 });
 
+//
+// CLASS DEFINITIONS
+//
+
 var Game = new Class({
 	players: null,
-	currentPlayer: null,
+	currentPlayer: 0,
 	currentTurn: null,
 	lastPieceMoved: null,
-	turnNum: 0,
+	turnNum: 1,
+	
+	// setup
 	
 	initialize: function() {
 		
 	},
-
-	alert: function(txt) {
-		setTimeout(function () {alert (txt); }, 100)
-	},
-
-	checkChecks: function(currentPlayer) {
-		var game = this;
-		var suffix = '';
-		
-		currentPlayer.check = false;
-		currentPlayer.getOtherPlayers().each(function(player) {			
-			var check = $$('.royal.' + player.color).every(function (royalPiece) { return royalPiece.object.inCheck(); });
-			var canMove = $$('#board .piece.' + player.color).some(function (piece) { return piece.object.hasAvailableMoves(); });
-
-			if (check && !canMove) {
-				game.alert('Checkmate!');
-				game.gameOver(player.getOtherPlayers()[0]);
-				suffix = '#';
-			} else if (check) {
-				if (!player.check) {
-					player.check = true;
-					game.alert('Check!');
-				}
-				suffix = '+';
-			} else if (!canMove) {
-				game.alert('Stalemate!');
-				game.gameOver('Stalemate.');
+	
+	setup: function() {
+		// create board
+		for (var i = 1; i <= 8; i++) {
+			for (var j = 1; j <= 8; j++) {
+				$(new Square(i, j)).inject('squares');
 			}
+		}
+		
+		// create players
+		var red = new Player(0, 'red');
+		var green = new Player(1, 'green');
+		var yellow = new Player(2, 'yellow');
+		var blue = new Player(3, 'blue');
+		this.players = [red, green, yellow, blue];
+		
+		// setup players
+		this.players.each( function (player) {
+			player.setup();
 		});
 		
-		return suffix;
+		// start first turn
+		this.turnStart();
+		this.playerStart();
 	},
-	
-	isCheckOn: function(player) {
-		return !$$('.royal.' + player.color).every(function (royalPiece) { return royalPiece.object.inCheck(); });
-	},
-	
-	displayMove: function(txt) {
-		if ((game.currentPlayer.order + 1) % 2 == 0) {
-			this.nextTurn();
-		}
 
-		var move = new Element('div.move');
-		move.appendText(txt).inject(this.currentTurn);		
-	},
+	// turns and players
 	
+	getPlayer: function(i) {
+		return this.players[i];
+	},
+    
+    getOtherPlayers: function(i) {
+		return this.players.filter( function(player) {
+    		return player.order != i;
+    	});
+    },
+    
+    getCurrentPlayer: function() {
+    	return this.getPlayer(this.currentPlayer);
+    },
+    
+    turnStart: function() {
+    	this.currentTurn = new Element('tr');
+    	new Element('td.num').appendText(this.turnNum).inject(this.currentTurn);
+		this.currentTurn.inject('moves');
+    },
+    
+    playerStart: function() {
+    	this.getCurrentPlayer().startTurn();
+    },
+    
 	nextPlayer: function() {
-		var nextIndex = (game.currentPlayer.order + 1) % 2;
-		this.currentPlayer = this.players[nextIndex];
+    	if (this.currentPlayer == this.players.length - 1) {
+    		this.nextTurn();
+    		this.currentPlayer = 0;
+    	} else {
+    		this.currentPlayer++;
+    	}
+    	
+		this.playerStart();
 	},
     
     nextTurn: function() {
     	this.turnNum++;
-    	this.currentTurn = new Element('div.turn');
-    	new Element('div.num').appendText(this.turnNum).inject(this.currentTurn);
-		this.currentTurn.inject('moves');
+    	this.turnStart();
     },
+        
+    // game status
 	
+    alert: function(txt) {
+		setTimeout(function () {alert (txt); }, 100)
+	},
+
+	checkChecks: function() {
+		var game = this;
+		var cp = this.getCurrentPlayer();
+		var suffix = '';
+		
+		cp.check = false;
+		
+		if (this.getOtherPlayers(cp.order).every(function (player) {
+			return ($$('#board .royal.' + player.color).length == 0)
+		})) {
+			game.gameOver(cp);
+			suffix = '##';
+		} else {
+			this.getOtherPlayers(cp.order).each(function(player) {			
+				var defeated = ($$('#board .royal.' + player.color).length == 0);
+				var check = $$('.royal.' + player.color).every(function (royalPiece) { return royalPiece.object.inCheck(); });
+				
+				if (defeated) {
+					if (player.inGame) {
+						player.defeated(cp);
+						suffix = '#';
+					}
+				} else if (check) {
+					if (!player.check) {
+						player.check = true;
+						game.alert('Check!');
+					}
+					suffix = '+';
+				}
+			});
+		}
+		
+		return suffix;
+	},
+
 	gameOver: function(winner) {
 		$$('#board .piece').each(function(piece) {
+			piece.object.transferPossession(winner);
 			piece.object.drag.detach();
 		});
 		
 		if (typeof(winner) == 'string') {
 			var outcomeText = winner;
 		} else {
-			var outcomeText = winner.color.charAt(0).toUpperCase() + winner.color.slice(1) + ' wins.';
+			var outcomeText = winner.color.capitalize() + ' wins.';
 		}
 		
 		var outcome = new Element('div.outcome');
 		outcome.appendText(outcomeText);
-		setTimeout(function () {outcome.inject('moves')}, 100);
+		setTimeout(function () {outcome.inject('sidebar')}, 100);
 	},
 	
-	getLastMoveText: function() {
-		return $$('#moves .move').getLast();
+	// pieces
+	
+	createPiece: function(name, params) {
+	    return eval('new ' + name + '(' + params.toString() + ');');
 	},
 	
 	doPromote: function(choice) {
@@ -125,14 +185,23 @@ var Game = new Class({
     	
     	this.hideDialog();
 	},
+
+	// moves
 	
+	displayMove: function(txt) {
+		var move = new Element('td.move');
+		move.appendText(txt).inject(this.currentTurn);		
+	},
+		
+	getLastMoveText: function() {
+		return $$('#moves .move').getLast();
+	},
+
+	// misc GUI
+
 	hideDialog: function() {
 	    $('dialog').clear();
 	    $('overlay').hide();
-	},
-	
-	createPiece: function(name, params) {
-	    return eval('new ' + name + '(' + params.toString() + ');');
 	}
 });
 
@@ -140,19 +209,67 @@ var Player = new Class({
     order: 0,
     color: '',
     check: false,
+    setupPieces: null,
     promotionPieces: null,
+    inGame: true,
 
     initialize: function(order, color) {
         this.order = order;
         this.color = color;
+        this.setupPieces = [['King', 'Rook', 'Bishop', 'Knight'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
         this.promotionPieces = ['Queen', 'Rook', 'Bishop', 'Knight'];
     },
     
-    getOtherPlayers: function() {
-    	var ord = this.order;
-    	return game.players.filter( function(player) {
-    		return player.order != ord;
+    setup: function() {
+    	var player = this;
+    	var rowNum = 1, colNum;
+    	this.setupPieces.each( function (row) {
+    		colNum = 1;
+    		row.each( function (piece) {
+    			player.placePiece(piece, rowNum, colNum, player.order);
+    			colNum++;
+    		});
+    		rowNum++;
     	});
+    },
+    
+    placePiece: function(name, row, col, order) {
+    	var piece;
+    	switch (order) {
+	    	case 0:
+	    		piece = game.createPiece(name, [col, row, order]);
+	    		break;
+	    	case 1:
+	    		piece = game.createPiece(name, [row, 9 - col, order]);
+	    		break;
+			case 2:
+				piece = game.createPiece(name, [9 - col, 9 - row, order]);
+	    		break;
+			case 3:
+				piece = game.createPiece(name, [9 - row, col, order]);
+	    		break;
+    	}
+    	$(piece).inject('pieces');
+    },
+    
+    defeated: function(defeatingPlayer) {
+    	this.inGame = false;
+    	
+    	$$('#board .piece.' + this.color).each(function (piece) {
+    		piece.object.transferPossession(defeatingPlayer);
+    	});
+    	
+    	game.alert(this.color.capitalize() + ' has been defeated.');
+    },
+    
+    startTurn: function() {
+    	if (!this.inGame) {
+     		game.displayMove('');
+       		if ((this.order - 1) % game.players.length == 0) {
+    			game.nextTurn();
+    		}
+    		game.nextPlayer();
+    	}
     }
 });
 
@@ -232,6 +349,8 @@ var Square = new Class({
 
         if (!sides) {
         	sides = [null];
+        } else if (!isNaN(sides)) {
+        	sides = game.players[sides];
         }
         
         Array.from(sides).each( function (side) {
@@ -251,14 +370,14 @@ var Square = new Class({
         return occupied;
     },
 
-    isLineOccupied: function(dest, dir, side) {
+    isLineOccupied: function(dest, dir, sides) {
         switch (dir) {
         case 'horizontal':
             var minX = Math.min(this.x + 1, dest.x);
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
                 var square = new Square(i, this.y);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
                 }
@@ -269,7 +388,7 @@ var Square = new Class({
             var maxY = Math.max(this.y - 1, dest.y);
             for (var j = minY; j <= maxY; j++) {
                 var square = new Square(this.x, j);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((j != maxY && j > this.y) || (j != minY && j < this.y)) && square.isOccupied())) {
                     return true;
                 }
@@ -280,7 +399,7 @@ var Square = new Class({
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
                 var square = new Square(i, this.y - this.x + i);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
                 }
@@ -291,7 +410,7 @@ var Square = new Class({
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
                 var square = new Square(i, this.y + this.x - i);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
                 }
@@ -318,38 +437,47 @@ var Square = new Class({
 		return isThreatened;
     },
 
-    isPawnMove: function(dest, side) {
-        if (side == white) {
-            return (!dest.isOccupied() && dest.x == this.x && dest.y == this.y + 1);
-        } else {
-            return (!dest.isOccupied() && dest.x == this.x && dest.y == this.y - 1);
-        }
+    isPawnMove: function(dest, dir) {
+    	switch (dir) {
+    	case 0:
+    		return (!dest.isOccupied() && dest.x == this.x && dest.y == this.y + 1);
+    	case 1:
+    		return (!dest.isOccupied() && dest.y == this.y && dest.x == this.x + 1);
+    	case 2:
+    		return (!dest.isOccupied() && dest.x == this.x && dest.y == this.y - 1);
+    	case 3:
+    		return (!dest.isOccupied() && dest.y == this.y && dest.x == this.x - 1);
+    	}
     },
 
-    isPawnDoubleMove: function(dest, side) {
-        if (side == white) {
-            return (this.y == 2 && dest.y == 4 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 3)).isOccupied(0));
-        } else {
-            return (this.y == 7 && dest.y == 5 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 6)).isOccupied(0));
-        }
+    isPawnDoubleMove: function(dest, dir) {
+    	switch (dir) {
+    	case 0:
+    		return (this.y == 2 && dest.y == 4 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 3)).isOccupied());
+    	case 1:
+    		return (this.x == 2 && dest.x == 4 && dest.y == this.y && !dest.isOccupied() && !(new Square(this.y, 3)).isOccupied());
+    	case 2:
+    		return (this.y == 7 && dest.y == 5 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 6)).isOccupied());
+    	case 3:
+    		return (this.x == 7 && dest.x == 5 && dest.y == this.y && !dest.isOccupied() && !(new Square(this.y, 6)).isOccupied());
+    	}
     },
 
-    isPawnCapture: function(dest, side) {
-        if (side == white) {
-            return (dest.isOccupied(black, true) && (dest.x == this.x + 1 || dest.x == this.x - 1) && dest.y == this.y + 1);
-        } else {
-            return (dest.isOccupied(white, true) && (dest.x == this.x + 1 || dest.x == this.x - 1) && dest.y == this.y - 1);
-        }
-    },
-    
-    isPawnEnPassant: function(dest, side) {
-    	if (side == white) {
-    		target = dest.getAdjacentSquare(0, -1) ? dest.getAdjacentSquare(0, -1).isOccupied(black) : null;
-			return (target && target == game.lastPieceMoved && target.moveType == 'double' && (dest.x == this.x + 1 || dest.x == this.x - 1) && this.y == 5 && dest.y == 6);
-		} else {
-			target = dest.getAdjacentSquare(0, 1) ? dest.getAdjacentSquare(0, 1).isOccupied(white) : null;
-			return (target && target == game.lastPieceMoved && target.moveType == 'double' && (dest.x == this.x + 1 || dest.x == this.x - 1) && this.y == 4 && dest.y == 3);
-        }
+    isPawnCapture: function(dest, dir, side) {
+    	if (dest.isOccupied(game.getOtherPlayers(side), true)) {
+	    	switch (dir) {
+	    	case 0:
+	    		return ((dest.x == this.x + 1 || dest.x == this.x - 1) && dest.y == this.y + 1);
+	    	case 1:
+	    		return ((dest.y == this.y + 1 || dest.y == this.y - 1) && dest.x == this.x + 1);    	
+	    	case 2:
+	    		return ((dest.x == this.x + 1 || dest.x == this.x - 1) && dest.y == this.y - 1);
+	    	case 3:
+	    		return ((dest.y == this.y + 1 || dest.y == this.y - 1) && dest.x == this.x - 1);
+	    	}
+    	} else {
+    		return false;
+    	}
     },
 
     isKnightMove: function(dest, side) {
@@ -370,66 +498,6 @@ var Square = new Class({
 
     isKingMove: function(dest, side) {
         return (!dest.isOccupied(side) && (dest.x == this.x || dest.x == this.x - 1 || dest.x == this.x + 1) && (dest.y == this.y || dest.y == this.y - 1 || dest.y == this.y + 1));
-    },
-    
-    isKingCastleKingside: function(dest, side) {
-    	if (side == white) {
-    		if (this.x == 5 && this.y == 1 && dest.x == 7 && dest.y == 1 && 
-    			this.isOccupied(white) && this.getPiece().pieceName == 'king' &&
-    			!dest.isOccupied() && !dest.getAdjacentSquare(-1, 0).isOccupied() &&
-    			dest.getAdjacentSquare(1, 0).isOccupied(white) && dest.getAdjacentSquare(1, 0).getPiece().pieceName == 'rook') {
-			    	var king = this.getPiece();
-			    	var rook = dest.getAdjacentSquare(1, 0).getPiece();
-			    	return (!king.inCheck() &&
-			    			!king.moved && !rook.moved && 
-			    			!dest.isThreatenedBy(black) && !dest.getAdjacentSquare(-1, 0).isThreatenedBy(black));
-    		} else {
-    			return false;
-    		}
-    	} else {
-    		if (this.x == 5 && this.y == 8 && dest.x == 7 && dest.y == 8 && 
-    			this.isOccupied(black) && this.getPiece().pieceName == 'king' &&
-    			!dest.isOccupied() && !dest.getAdjacentSquare(-1, 0).isOccupied() &&
-    			dest.getAdjacentSquare(1, 0).isOccupied(black) && dest.getAdjacentSquare(1, 0).getPiece().pieceName == 'rook') {
-					var king = this.getPiece();
-			    	var rook = dest.getAdjacentSquare(1, 0).getPiece();
-					return (!king.inCheck() &&
-							!king.moved && !rook.moved && 
-							!dest.isThreatenedBy(white) && !dest.getAdjacentSquare(-1, 0).isThreatenedBy(white));
-			} else {
-				return false;
-    		}
-    	}
-    },
-    
-    isKingCastleQueenside: function(dest, side) {
-    	if (side == white) {
-			if (this.x == 5 && this.y == 1 && dest.x == 3 && dest.y == 1 && 
-				this.isOccupied(white) && this.getPiece().pieceName == 'king' &&
-				!dest.isOccupied() && !dest.getAdjacentSquare(1, 0).isOccupied() && !dest.getAdjacentSquare(-1, 0).isOccupied() &&
-				dest.getAdjacentSquare(-2, 0).isOccupied(white) && dest.getAdjacentSquare(-2, 0).getPiece().pieceName == 'rook') {
-					var king = this.getPiece();
-					var rook = dest.getAdjacentSquare(-2, 0).getPiece();
-					return (!king.inCheck() &&
-							!king.moved && !rook.moved && 
-							!dest.isThreatenedBy(black) && !dest.getAdjacentSquare(1, 0).isThreatenedBy(black));
-			} else {
-				return false;
-			}
-		} else {
-			if (this.x == 5 && this.y == 8 && dest.x == 3 && dest.y == 8 && 
-				this.isOccupied(black) && this.getPiece().pieceName == 'king' &&
-				!dest.isOccupied() && !dest.getAdjacentSquare(1, 0).isOccupied() && !dest.getAdjacentSquare(-1, 0).isOccupied() &&
-				dest.getAdjacentSquare(-2, 0).isOccupied(black) && dest.getAdjacentSquare(-2, 0).getPiece().pieceName == 'rook') {
-					var king = this.getPiece();
-					var rook = dest.getAdjacentSquare(-2, 0).getPiece();
-					return (!king.inCheck() &&
-							!king.moved && !rook.moved && 
-							!dest.isThreatenedBy(white) && !dest.getAdjacentSquare(1, 0).isThreatenedBy(white));
-			} else {
-				return false;
-			}
-    	}
     }
 });
 
@@ -439,6 +507,7 @@ var Piece = new Class({
     pieceName: '',
     pieceChar: '',
     side: null,
+    color: null,
     
     moved: false,
     lastPosition: null,
@@ -448,13 +517,18 @@ var Piece = new Class({
     moveType: 'normal', // used by: Pawn, King
     royal: false, // royal pieces: King
 
+    // setup
+    
     initialize: function(x, y, side) {
+		if (!game) {return;}
+	
         this.x = x;
         this.y = y;
         this.side = side;
-
-        this.element = new Element('img', {
-            'class': 'piece',
+        this.color = game.players[side].color;
+        
+    	this.element = new Element('img', {
+            'class': 'piece'
         });
         this.element.object = this;
 
@@ -466,16 +540,18 @@ var Piece = new Class({
         }
     },
 
-    toElement: function() {
-        this.refresh();
-        return this.element;
+    refresh: function() {
+        this.element.setStyle('left', ((this.x - 1) * squareSize) + 'px');
+        this.element.setStyle('top', ((8 - this.y) * squareSize) + 'px');
+        
+        if (this.royal) {
+        	this.element.addClass('royal');
+        }
     },
 
     setImage: function() {
-        if (this.side) {
-            this.element.addClass(this.side.color);
-            this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.side.color + '.png');
-        }
+        this.element.addClass(this.color);
+        this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
     },
     
     addDragEvent: function() {
@@ -491,7 +567,7 @@ var Piece = new Class({
     	        $$('.square').each(function (droppable) {
     	        	square = droppable.object;
     	        	
-    	        	if (piece.canMove(square) && piece.safeToMove(droppable.object)) {
+    	        	if (piece.canMove(square)) {
     	        		droppable.addClass('hoverBlue');
     	        	}
     	        })
@@ -503,7 +579,7 @@ var Piece = new Class({
     	        var piece = draggable.object;
     	
     	        if (droppable && !piece.getSquare().equals(droppable.object)) {
-    	            if (piece.side == game.currentPlayer && piece.canMove(droppable.object) && piece.safeToMove(droppable.object)) {
+    	            if (piece.side == game.currentPlayer && piece.canMove(droppable.object)) {
     	                droppable.addClass('hoverGreen');
     	            } else {
     	                droppable.addClass('hoverRed');
@@ -517,7 +593,7 @@ var Piece = new Class({
     	
     	        var piece = draggable.object;
     	
-    	        if (droppable && piece.side == game.currentPlayer && piece.canMove(droppable.object) && piece.safeToMove(droppable.object)) {
+    	        if (droppable && piece.side == game.currentPlayer && piece.canMove(droppable.object)) {
     	            piece.moveTo(droppable.object);
     	            piece.afterMove();
     	        } else {
@@ -527,17 +603,25 @@ var Piece = new Class({
     	});
     },
 
-    refresh: function() {
-        this.element.setStyle('left', ((this.x - 1) * squareSize) + 'px');
-        this.element.setStyle('top', ((8 - this.y) * squareSize) + 'px');
-        
-        if (this.royal) {
-        	this.element.addClass('royal');
-        }
+    // getters
+    
+    toElement: function() {
+        this.refresh();
+        return this.element;
     },
 
     getSquare: function() {
         return new Square(this.x, this.y);
+    },
+    
+    getOwner: function(player) {
+    	return game.getPlayer(this.side);
+    },
+    
+    // movement
+
+    canMove: function(square) {
+        return true; // override this method
     },
 
     moveTo: function(square, type) {
@@ -554,24 +638,6 @@ var Piece = new Class({
             if (square.isOccupied()) {
             	verb = 'x';
                 this.capture(square.getPiece());
-            } else if (this.moveType == 'enPassant') {
-            	verb = 'x';
-            	suffix = ' e.p.';
-            	if (this.side == white) {
-            		this.capture(square.getAdjacentSquare(0, -1).getPiece());
-            	} else if (this.side == black) {
-            		this.capture(square.getAdjacentSquare(0, 1).getPiece());
-            	}
-            } else if (this.moveType == 'castleKingside') {
-            	verb = '0-0';
-            	var rook = square.getAdjacentSquare(1, 0).getPiece();
-            	var rookDest = square.getAdjacentSquare(-1, 0);
-            	rook.moveTo(rookDest, 'free');
-            } else if (this.moveType == 'castleQueenside') {
-            	verb = '0-0-0';
-            	var rook = square.getAdjacentSquare(-2, 0).getPiece();
-            	var rookDest = square.getAdjacentSquare(1, 0);
-            	rook.moveTo(rookDest, 'free');
             }
             
             // Apply the move
@@ -579,27 +645,25 @@ var Piece = new Class({
             this.lastPosition = this.getSquare();
             this.x = square.x;
             this.y = square.y;
-            
-            if (type != 'test') {
-	            this.refresh();
-	            this.moved = true;
-            }
+            this.refresh();
 
-            // Change game settings
-            
-            if (type != 'free' && type != 'test') {
-                game.lastPieceMoved = this;
-            	suffix += game.checkChecks(game.currentPlayer);
-	            game.currentPlayer.check = false;
-	            game.nextPlayer();
-	            
-	            // Display algebraic notation
-            
+            if (type != 'free') {
+                // Check checks
+            	
+            	suffix += game.checkChecks();
+            	
+            	// Display algebraic notation
+            	
             	if (verb == '0-0' || verb == '0-0-0') {
 					game.displayMove(verb);
 				} else {
 					game.displayMove(this.pieceChar + startStr + verb + destStr + suffix);
             	}
+            	
+            	// Change game vars
+            	
+            	game.lastPieceMoved = this;
+	            game.nextPlayer();
             }
         }
     },
@@ -607,32 +671,11 @@ var Piece = new Class({
     afterMove: function() {
     	// override this method
     },
+    
+    // capture
 
-    canMove: function(square) {
-        return true; // override this method
-    },
-    
-    safeToMove: function(square) {
-    	if (this.moveType == 'castleKingside' || this.moveType == 'castleQueenside' || this.moveType == 'enPassant') {
-    		return true; // no need to verify for castle, since you can't castle when checked anyway 
-    		// TODO: figure out safeToMove for en passant
-    	}
-    	
-    	this.moveTo(square, 'test');
-    	var check = game.isCheckOn(this.side);
-    	this.undoMove();
-    	return check;
-    },
-    
     canCapture: function(piece) {
     	return this.canMove(piece.getSquare());
-    },
-    
-    hasAvailableMoves: function() {
-    	var piece = this;
-    	return $$('.square').some(function (square) {
-    		return piece.canMove(square.object) && piece.safeToMove(square.object);
-    	})
     },
 
     capture: function(piece) {
@@ -645,26 +688,23 @@ var Piece = new Class({
     	this.drag.detach();
     },
     
-    undoMove: function() {
-        var lastCapture = this.lastCapture;
-		this.moveTo(this.lastPosition, 'test');
-		if (lastCapture) {
-			lastCapture.undoCaptured();
-		}
-    },
-    
-    undoCaptured: function() {
-    	this.element.inject('pieces');
-    	this.refresh();
-    	this.addDragEvent();
-    },
+    // misc
     
 	inCheck: function() {
 		if (!this.royal) {
 			return false;
 		} else {
-			return this.getSquare().isThreatenedBy(this.side.getOtherPlayers());
+			return this.getSquare().isThreatenedBy(game.getOtherPlayers(this.side));
 		}
+    },
+    
+    transferPossession: function(player) {
+        this.element.removeClass(this.color);
+
+        this.side = player.order;
+        this.color = player.color;
+        
+        this.setImage();
     }
 });
 
@@ -673,18 +713,27 @@ var Piece = new Class({
 //
 
 var Pawn = new Class({
-    Implements: Piece,
+    Extends: Piece,
 
     pieceName: 'pawn',
     pieceChar: '',
+    direction: null,
+    
+    initialize: function (x, y, side) {
+		this.direction = side;
+		this.parent(x, y, side);
+	},
+	
+	setImage: function() {
+        this.element.addClass(this.color);
+        this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png');
+    },
     
     canMove: function(square) {
-    	if (this.getSquare().isPawnMove(square, this.side) || this.getSquare().isPawnCapture(square, this.side)) {
+    	if (this.getSquare().isPawnMove(square, this.direction) || this.getSquare().isPawnCapture(square, this.direction)) {
     		this.moveType = 'normal';
-    	} else if (this.getSquare().isPawnDoubleMove(square, this.side)) {
+    	} else if (this.getSquare().isPawnDoubleMove(square, this.direction, this.side)) {
     		this.moveType = 'double';
-    	} else if (this.getSquare().isPawnEnPassant(square, this.side)) {
-    		this.moveType = 'enPassant';
     	} else {
     		return false;
     	}
@@ -693,8 +742,10 @@ var Pawn = new Class({
     },
 
 	afterMove: function() {
-    	if ((this.side == white && this.y == 8) ||
-    		(this.side == black && this.y == 1)) {
+    	if ((this.side == 0 && this.y == 8) ||
+    		(this.side == 1 && this.x == 8) ||
+    		(this.side == 2 && this.y == 1) ||
+    		(this.side == 3 && this.x == 1)) {
     			this.promote();
     	}
     },
@@ -703,8 +754,8 @@ var Pawn = new Class({
         new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
         
         var pawn = this;
-        var player = pawn.side;
-        player.promotionPieces.each(function(pieceName) {
+        var owner = pawn.getOwner();
+        owner.promotionPieces.each(function(pieceName) {
             var piece = game.createPiece(pieceName, [pawn.x, pawn.y, player.color]);
             piece.drag.detach();
             piece.element.onclick = function () {
@@ -718,7 +769,7 @@ var Pawn = new Class({
 });
 
 var Knight = new Class({
-    Implements: Piece,
+	Extends: Piece,
 
     pieceName: 'knight',
     pieceChar: 'N',
@@ -729,7 +780,7 @@ var Knight = new Class({
 });
 
 var Bishop = new Class({
-    Implements: Piece,
+	Extends: Piece,
 
     pieceName: 'bishop',
     pieceChar: 'B',
@@ -740,7 +791,7 @@ var Bishop = new Class({
 });
 
 var Rook = new Class({
-    Implements: Piece,
+	Extends: Piece,
 
     pieceName: 'rook',
     pieceChar: 'R',
@@ -751,7 +802,7 @@ var Rook = new Class({
 });
 
 var Queen = new Class({
-    Implements: Piece,
+	Extends: Piece,
 
     pieceName: 'queen',
     pieceChar: 'Q',
@@ -762,24 +813,14 @@ var Queen = new Class({
 });
 
 var King = new Class({
-    Implements: Piece,
+	Extends: Piece,
 
     pieceName: 'king',
     pieceChar: 'K',
     royal: true,
 
     canMove: function(square) {
-        if (this.getSquare().isKingMove(square, this.side)) {
-        	this.moveType = 'normal';
-        } else if (this.getSquare().isKingCastleKingside(square, this.side)) {
-        	this.moveType = 'castleKingside';
-        } else if (this.getSquare().isKingCastleQueenside(square, this.side)) {
-        	this.moveType = 'castleQueenside';
-        } else {
-        	return false;
-        }
-        
-        return true;
+        return (this.getSquare().isKingMove(square, this.side));
     }
 });
 
@@ -788,48 +829,4 @@ var King = new Class({
 //
 
 var game = new Game();
-
-var white = new Player(0, 'white');
-var black = new Player(1, 'black');
-game.players = [white, black];
-game.currentPlayer = white;
-
-for (var i = 1; i <= 8; i++) {
-	for (var j = 1; j <= 8; j++) {
-		$(new Square(i, j)).inject('squares');
-	}
-}
-
-$(new Rook(1, 1, white)).inject('pieces');
-$(new Knight(2, 1, white)).inject('pieces');
-$(new Bishop(3, 1, white)).inject('pieces');
-$(new Queen(4, 1, white)).inject('pieces');
-$(new King(5, 1, white)).inject('pieces');
-$(new Bishop(6, 1, white)).inject('pieces');
-$(new Knight(7, 1, white)).inject('pieces');
-$(new Rook(8, 1, white)).inject('pieces');
-$(new Pawn(1, 2, white)).inject('pieces');
-$(new Pawn(2, 2, white)).inject('pieces');
-$(new Pawn(3, 2, white)).inject('pieces');
-$(new Pawn(4, 2, white)).inject('pieces');
-$(new Pawn(5, 2, white)).inject('pieces');
-$(new Pawn(6, 2, white)).inject('pieces');
-$(new Pawn(7, 2, white)).inject('pieces');
-$(new Pawn(8, 2, white)).inject('pieces');
-
-$(new Rook(1, 8, black)).inject('pieces');
-$(new Knight(2, 8, black)).inject('pieces');
-$(new Bishop(3, 8, black)).inject('pieces');
-$(new Queen(4, 8, black)).inject('pieces');
-$(new King(5, 8, black)).inject('pieces');
-$(new Bishop(6, 8, black)).inject('pieces');
-$(new Knight(7, 8, black)).inject('pieces');
-$(new Rook(8, 8, black)).inject('pieces');
-$(new Pawn(1, 7, black)).inject('pieces');
-$(new Pawn(2, 7, black)).inject('pieces');
-$(new Pawn(3, 7, black)).inject('pieces');
-$(new Pawn(4, 7, black)).inject('pieces');
-$(new Pawn(5, 7, black)).inject('pieces');
-$(new Pawn(6, 7, black)).inject('pieces');
-$(new Pawn(7, 7, black)).inject('pieces');
-$(new Pawn(8, 7, black)).inject('pieces');
+game.setup();
