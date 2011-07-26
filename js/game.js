@@ -29,12 +29,37 @@ Element.implement({
     }
 });
 
+Array.implement({
+	// we override the usual Array.toString() function because we want to quote strings
+	toString: function() {
+		var str = '';
+		this.each(function (el) {
+			if (typeof(el) == 'string') {
+				str += "'" + el + "',";
+			} else {
+				str += el + ',';
+			}
+		});
+		return str.substring(0, str.length - 1);
+	}
+});
+
+//
+// STATIC CLASSES
+//
+
+var AbstractFactory = new new Class({
+	create: function(name, params) {
+		return eval('new ' + name + '(' + params.toString() + ');');
+	}
+});
+
 //
 // CLASS DEFINITIONS
 //
 
 var Game = new Class({
-	players: null,
+	players: [],
 	currentPlayer: 0,
 	currentTurn: null,
 	lastPieceMoved: null,
@@ -53,24 +78,20 @@ var Game = new Class({
 				$(new Square(i, j)).inject('squares');
 			}
 		}
-		
-		// create players
-		var red = new Player(0, 'red');
-		var green = new Player(1, 'green');
-		var yellow = new Player(2, 'yellow');
-		var blue = new Player(3, 'blue');
-		this.players = [red, green, yellow, blue];
-		
-		// setup players
-		this.players.each( function (player) {
-			player.setup();
-		});
-		
-		// start first turn
+	},
+	
+	addPlayer: function(countryName, color) {
+		var order = this.players.length;
+		var player = AbstractFactory.create(countryName, [order, color])
+		this.players.push(player);
+		player.setup();
+	},
+	
+	startGame: function() {
 		this.turnStart();
 		this.playerStart();
 	},
-
+	
 	// turns and players
 	
 	getPlayer: function(i) {
@@ -173,10 +194,6 @@ var Game = new Class({
 	
 	// pieces
 	
-	createPiece: function(name, params) {
-	    return eval('new ' + name + '(' + params.toString() + ');');
-	},
-	
 	doPromote: function(choice) {
 	    var pawn = this.lastPieceMoved;
 	    
@@ -219,8 +236,6 @@ var Player = new Class({
     initialize: function(order, color) {
         this.order = order;
         this.color = color;
-        this.setupPieces = [['King', 'Rook', 'Bishop', 'Knight'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-        this.promotionPieces = ['Queen', 'Rook', 'Bishop', 'Knight'];
     },
     
     setup: function() {
@@ -236,20 +251,20 @@ var Player = new Class({
     	});
     },
     
-    placePiece: function(name, row, col, order) {
+    placePiece: function(pieceName, row, col, order) {
     	var piece;
     	switch (order) {
 	    	case 0:
-	    		piece = game.createPiece(name, [col, row, order]);
+	    		piece = AbstractFactory.create(pieceName, [col, row, order]);
 	    		break;
 	    	case 1:
-	    		piece = game.createPiece(name, [row, 9 - col, order]);
+	    		piece = AbstractFactory.create(pieceName, [row, 9 - col, order]);
 	    		break;
 			case 2:
-				piece = game.createPiece(name, [9 - col, 9 - row, order]);
+				piece = AbstractFactory.create(pieceName, [9 - col, 9 - row, order]);
 	    		break;
 			case 3:
-				piece = game.createPiece(name, [9 - row, col, order]);
+				piece = AbstractFactory.create(pieceName, [9 - row, col, order]);
 	    		break;
     	}
     	$(piece).inject('pieces');
@@ -688,127 +703,3 @@ var Piece = new Class({
         this.setImage();
     }
 });
-
-//
-// PIECES
-//
-
-var Pawn = new Class({
-    Extends: Piece,
-
-    pieceName: 'pawn',
-    pieceChar: '',
-    direction: null,
-    
-    initialize: function (x, y, side) {
-		this.direction = side;
-		this.parent(x, y, side);
-	},
-	
-	setImage: function() {
-        this.element.addClass(this.color);
-        this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png');
-    },
-    
-    canMove: function(square) {
-    	if (this.getSquare().isPawnMove(square, this.direction) || 
-    			this.getSquare().isPawnCapture(square, this.direction, this.side)) {
-    		this.moveType = 'normal';
-    	} else if (this.getSquare().isPawnDoubleMove(square, this.direction, this.side)) {
-    		this.moveType = 'double';
-    	} else {
-    		return false;
-    	}
-    	
-    	return true;
-    },
-
-	afterMove: function() {
-    	if ((this.direction == 0 && this.y == 8) ||
-    		(this.direction == 1 && this.x == 8) ||
-    		(this.direction == 2 && this.y == 1) ||
-    		(this.direction == 3 && this.x == 1)) {
-    			this.promote();
-    	}
-    },
-    
-    promote: function() {
-        new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
-        
-        var pawn = this;
-        var owner = pawn.getOwner();
-        owner.promotionPieces.each(function(pieceName) {
-            var piece = game.createPiece(pieceName.capitalize(), [pawn.x, pawn.y, owner.order]);
-            piece.drag.detach();
-            piece.element.onclick = function () {
-                game.doPromote(piece);
-            };
-            piece.element.inject($('dialog'));
-        });
-        
-        $('overlay').show();
-    }
-});
-
-var Knight = new Class({
-	Extends: Piece,
-
-    pieceName: 'knight',
-    pieceChar: 'N',
-
-    canMove: function(square) {
-        return this.getSquare().isKnightMove(square, this.side);
-    }
-});
-
-var Bishop = new Class({
-	Extends: Piece,
-
-    pieceName: 'bishop',
-    pieceChar: 'B',
-
-    canMove: function(square) {
-        return this.getSquare().isBishopMove(square, this.side);
-    }
-});
-
-var Rook = new Class({
-	Extends: Piece,
-
-    pieceName: 'rook',
-    pieceChar: 'R',
-
-    canMove: function(square) {
-        return this.getSquare().isRookMove(square, this.side);
-    }
-});
-
-var Queen = new Class({
-	Extends: Piece,
-
-    pieceName: 'queen',
-    pieceChar: 'Q',
-
-    canMove: function(square) {
-        return (this.getSquare().isBishopMove(square, this.side) || this.getSquare().isRookMove(square, this.side));
-    }
-});
-
-var King = new Class({
-	Extends: Piece,
-
-    pieceName: 'king',
-    pieceChar: 'K',
-    royal: true,
-
-    canMove: function(square) {
-        return (this.getSquare().isKingMove(square, this.side));
-    }
-});
-
-//
-// SETUP
-//
-
-var game = new Game();
-game.setup();
