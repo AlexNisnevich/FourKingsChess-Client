@@ -436,11 +436,11 @@ var Square = new Class({
     	case 0:
     		return (this.y == 2 && dest.y == 4 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 3)).isOccupied());
     	case 1:
-    		return (this.x == 2 && dest.x == 4 && dest.y == this.y && !dest.isOccupied() && !(new Square(this.y, 3)).isOccupied());
+    		return (this.x == 2 && dest.x == 4 && dest.y == this.y && !dest.isOccupied() && !(new Square(3, this.y)).isOccupied());
     	case 2:
     		return (this.y == 7 && dest.y == 5 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 6)).isOccupied());
     	case 3:
-    		return (this.x == 7 && dest.x == 5 && dest.y == this.y && !dest.isOccupied() && !(new Square(this.y, 6)).isOccupied());
+    		return (this.x == 7 && dest.x == 5 && dest.y == this.y && !dest.isOccupied() && !(new Square(6, this.y)).isOccupied());
     	}
     },
 
