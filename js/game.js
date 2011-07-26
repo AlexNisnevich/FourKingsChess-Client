@@ -179,13 +179,10 @@ var Game = new Class({
 	
 	doPromote: function(choice) {
 	    var pawn = this.lastPieceMoved;
-	    
 	    choice.element.inject('pieces');
-	    choice.addDragEvent();
-	    choice.element.onclick = "";
     	pawn.element.dispose();
-    	
     	game.getLastMoveText().appendText('=' + choice.pieceChar);
+    	
     	this.hideDialog();
 	},
 
@@ -267,8 +264,11 @@ var Player = new Class({
     
     startTurn: function() {
     	if (!this.inGame) {
-     		game.displayMove('--');
-       		game.nextPlayer();
+     		game.displayMove('');
+       		if ((this.order - 1) % game.players.length == 0) {
+    			game.nextTurn();
+    		}
+    		game.nextPlayer();
     	}
     }
 });
@@ -276,6 +276,8 @@ var Player = new Class({
 var Square = new Class({
     x: 0,
     y: 0,
+    
+    assumeOccupied: false, // temporarily disables isOccupied check for isPawnCapture
 
     initialize: function(x, y) {
         this.x = x;
@@ -337,29 +339,45 @@ var Square = new Class({
         }
     },
 
-    isOccupied: function(side) {
+    isOccupied: function(sides, testingPawnCapture) {
         var square = this;
-        var query = '#board .piece';
+        var occupied = false;
         
-        if (!isNaN(side)) {
-        	query += '.' + game.getPlayer(side).color;
-        } else if (side) {
-        	query += '.' + side.color;
+        if (testingPawnCapture && this.assumeOccupied) {
+        	return true;
         }
 
-        return $$(query).some(function(piece) {
-            return piece.object.x == square.x && piece.object.y == square.y;
-        });
+        if (!sides) {
+        	sides = [null];
+        } else if (!isNaN(sides)) {
+        	sides = game.players[sides];
+        }
+        
+        Array.from(sides).each( function (side) {
+    		var query = '#board .piece';
+    		
+            if (side) {
+                query += '.' + side.color;
+            }
+
+            $$(query).each(function(piece) {
+                if (piece.object.x == square.x && piece.object.y == square.y) {
+                    occupied = piece.object;
+                }
+            });
+    	})
+
+        return occupied;
     },
 
-    isLineOccupied: function(dest, dir, side) {
+    isLineOccupied: function(dest, dir, sides) {
         switch (dir) {
         case 'horizontal':
             var minX = Math.min(this.x + 1, dest.x);
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
                 var square = new Square(i, this.y);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
                 }
@@ -370,7 +388,7 @@ var Square = new Class({
             var maxY = Math.max(this.y - 1, dest.y);
             for (var j = minY; j <= maxY; j++) {
                 var square = new Square(this.x, j);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((j != maxY && j > this.y) || (j != minY && j < this.y)) && square.isOccupied())) {
                     return true;
                 }
@@ -381,7 +399,7 @@ var Square = new Class({
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
                 var square = new Square(i, this.y - this.x + i);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
                 }
@@ -392,7 +410,7 @@ var Square = new Class({
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
                 var square = new Square(i, this.y + this.x - i);
-                if (square.isOccupied(side) ||
+                if (square.isOccupied(sides) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
                 }
@@ -405,6 +423,7 @@ var Square = new Class({
     isThreatenedBy: function(sides) {
     	var square = this;
     	var isThreatened = false;
+    	this.assumeOccupied = true;
     	
     	Array.from(sides).each( function (side) {
 	    	if ($$('#board .piece.' + side.color).some (function (piece) {
@@ -445,7 +464,7 @@ var Square = new Class({
     },
 
     isPawnCapture: function(dest, dir, side) {
-    	if (dest.isOccupied() && !dest.isOccupied(side)) {
+    	if (dest.isOccupied(game.getOtherPlayers(side), true)) {
 	    	switch (dir) {
 	    	case 0:
 	    		return ((dest.x == this.x + 1 || dest.x == this.x - 1) && dest.y == this.y + 1);
@@ -711,8 +730,7 @@ var Pawn = new Class({
     },
     
     canMove: function(square) {
-    	if (this.getSquare().isPawnMove(square, this.direction) || 
-    			this.getSquare().isPawnCapture(square, this.direction, this.side)) {
+    	if (this.getSquare().isPawnMove(square, this.direction) || this.getSquare().isPawnCapture(square, this.direction)) {
     		this.moveType = 'normal';
     	} else if (this.getSquare().isPawnDoubleMove(square, this.direction, this.side)) {
     		this.moveType = 'double';
@@ -724,10 +742,10 @@ var Pawn = new Class({
     },
 
 	afterMove: function() {
-    	if ((this.direction == 0 && this.y == 8) ||
-    		(this.direction == 1 && this.x == 8) ||
-    		(this.direction == 2 && this.y == 1) ||
-    		(this.direction == 3 && this.x == 1)) {
+    	if ((this.side == 0 && this.y == 8) ||
+    		(this.side == 1 && this.x == 8) ||
+    		(this.side == 2 && this.y == 1) ||
+    		(this.side == 3 && this.x == 1)) {
     			this.promote();
     	}
     },
@@ -738,10 +756,10 @@ var Pawn = new Class({
         var pawn = this;
         var owner = pawn.getOwner();
         owner.promotionPieces.each(function(pieceName) {
-            var piece = game.createPiece(pieceName.capitalize(), [pawn.x, pawn.y, owner.order]);
+            var piece = game.createPiece(pieceName, [pawn.x, pawn.y, player.color]);
             piece.drag.detach();
             piece.element.onclick = function () {
-                game.doPromote(piece);
+                game.doPromote(this.object);
             };
             piece.element.inject($('dialog'));
         });
