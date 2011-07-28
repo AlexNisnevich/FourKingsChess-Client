@@ -31,11 +31,12 @@ var Pawn = new Class({
     },
 
 	afterMove: function() {
-    	if ((this.direction == 0 && this.y == 8) ||
+    	if (((this.direction == 0 && this.y == 8) ||
     		(this.direction == 1 && this.x == 8) ||
     		(this.direction == 2 && this.y == 1) ||
-    		(this.direction == 3 && this.x == 1)) {
-    			this.promote();
+    		(this.direction == 3 && this.x == 1)) &&
+    			(owner.promotionPieces.length != 0)) {
+    				this.promote();
     	}
     },
     
@@ -49,10 +50,11 @@ var Pawn = new Class({
     },
     
     promote: function() {
-        new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
-        
         var pawn = this;
         var owner = pawn.getOwner();
+    	
+        new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
+        
         owner.promotionPieces.each(function(pieceName) {
             var piece = AbstractFactory.create(pieceName.capitalize(), [pawn.x, pawn.y, owner.order]);
             piece.drag.detach();
