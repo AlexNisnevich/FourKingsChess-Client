@@ -151,3 +151,39 @@ var AthensBishop = new Class({
 		}
 	}
 });
+
+var MongolPawn =  new Class({
+	Extends: Pawn,
+	
+	pieceName: 'pawn',
+	pieceChar: '',
+	
+	canMove: function(square) {
+		var pos = this.getSquare();
+		return ((!square.isOccupied() && 
+					((square.x == pos.x && (square.y == pos.y + 1 || square.y == pos.y - 1)) || 
+					(square.y == pos.y && (square.x == pos.x + 1 || square.x == pos.x - 1)))) ||
+				(square.isOccupied() && !square.isOccupied(this.side) && 
+					(square.x == pos.x + 1 || square.x == pos.x - 1) &&
+					(square.y == pos.y + 1 || square.y == pos.y - 1)));
+	},
+	
+	afterMove: function() {
+    	if ((this.side == 0 && (this.y == 8 || this.x == 8)) ||
+    		(this.side == 1 && (this.x == 8 || this.y == 1)) ||
+    		(this.side == 2 && (this.y == 1 || this.x == 1)) ||
+    		(this.side == 3 && (this.x == 1 || this.y == 8))) {
+    			this.promote();
+    	}
+    },
+	
+	setImage: function() {
+        this.element.addClass(this.color);
+        this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
+    },
+    
+    promote: function() {
+        this.getOwner().refreshPromotionPieces();
+        this.parent();
+    }
+});

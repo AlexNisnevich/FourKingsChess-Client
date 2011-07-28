@@ -232,6 +232,7 @@ var Player = new Class({
     check: false,
     setupPieces: null,
     promotionPieces: null,
+    derivedPieces: null,
     inGame: true,
 
     initialize: function(order, color) {
@@ -289,8 +290,17 @@ var Player = new Class({
     },
     
     receivedPiece: function(piece) {
-    	// override this if you have special pieces
-    	// e.g. Bishop -> AthensBishop
+    	this.derivedPieces.each(function (derivedPiece) {
+    		if (piece.pieceName.capitalize() == derivedPiece[0]) {
+    			piece.transform(derivedPiece[1]);
+    		}
+    	});
+    },
+    
+    countPieces: function(pieceName) {
+    	return $$('#board .' + this.color).filter(function (piece) {
+    		return (piece.object.pieceName == pieceName);
+    	}).length;
     }
 });
 
@@ -326,6 +336,10 @@ var Square = new Class({
 
     equals: function(square) {
         return (this.x == square.x && this.y == square.y);
+    },
+    
+    distance: function(square) {
+    	return (Math.abs(this.x - square.x) + Math.abs(this.y - square.y));
     },
 
     getPiece: function() {
