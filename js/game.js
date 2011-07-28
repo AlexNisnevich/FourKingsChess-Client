@@ -85,6 +85,7 @@ var Game = new Class({
 		var player = AbstractFactory.create(countryName, [order, color])
 		this.players.push(player);
 		player.setup();
+		$$('#moves .heading.' + color).appendText(player.countryName);
 	},
 	
 	startGame: function() {
@@ -165,9 +166,9 @@ var Game = new Class({
 				} else if (check) {
 					if (!player.check) {
 						player.check = true;
+						suffix = '+';
 						game.alert('Check!');
 					}
-					suffix = '+';
 				}
 			});
 		}
@@ -620,6 +621,19 @@ var Piece = new Class({
         return true; // override this method
     },
 
+    isMoveCheck: function(square) {
+    	var piece = this;
+    	var oldX = this.x, oldY = this.y;
+    	this.x = square.x; this.y = square.y;
+    		
+    	var result = $$('#board .royal').some(function(royalPiece) {
+			return piece.canMove(royalPiece.object.getSquare());
+		});
+    	
+    	this.x = oldX; this.y = oldY;
+    	return result;
+    },
+
     moveTo: function(square, type) {
         if (!this.getSquare().equals(square)) {
         	// For algebraic notation
@@ -667,7 +681,7 @@ var Piece = new Class({
     afterMove: function() {
     	// override this method
     },
-    
+     
     // capture
 
     canCapture: function(piece) {

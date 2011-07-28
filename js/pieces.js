@@ -1,3 +1,5 @@
+// BASE PIECES
+
 var Pawn = new Class({
     Extends: Piece,
 
@@ -43,7 +45,7 @@ var Pawn = new Class({
         var pawn = this;
         var owner = pawn.getOwner();
         owner.promotionPieces.each(function(pieceName) {
-            var piece = game.createPiece(pieceName.capitalize(), [pawn.x, pawn.y, owner.order]);
+            var piece = AbstractFactory.create(pieceName.capitalize(), [pawn.x, pawn.y, owner.order]);
             piece.drag.detach();
             piece.element.onclick = function () {
                 game.doPromote(piece);
@@ -109,4 +111,34 @@ var King = new Class({
     canMove: function(square) {
         return (this.getSquare().isKingMove(square, this.side));
     }
+});
+
+// DERIVED PIECES
+
+var AthensBishop = new Class({
+	Extends: Bishop,
+	
+	pieceName: 'bishop',
+	pieceChar: 'B',
+	
+	canMove: function(square) {
+		if (this.parent(square)) {
+			this.moveType = 'normal';
+		} else if (!square.isOccupied() && !this.isMoveCheck(square) && !this.getOwner().wasLastMoveTeleport) {
+			this.moveType = 'teleport';
+		} else {
+			return false;
+		}
+		
+		return true;
+	},
+	
+	afterMove: function() {
+		if (this.moveType == 'teleport') {
+			game.getLastMoveText().appendText(' T');
+			this.getOwner().wasLastMoveTeleport = true;
+		} else {
+			this.getOwner().wasLastMoveTeleport = false;
+		}
+	}
 });
