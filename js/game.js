@@ -286,6 +286,11 @@ var Player = new Class({
      		game.displayMove('--');
        		game.nextPlayer();
     	}
+    },
+    
+    receivedPiece: function(piece) {
+    	// override this if you have special pieces
+    	// e.g. Bishop -> AthensBishop
     }
 });
 
@@ -715,5 +720,16 @@ var Piece = new Class({
         this.color = player.color;
         
         this.setImage();
-    }
+        
+        var newPiece = this.transform(this.pieceName.capitalize()); // transform to base piece ...
+        this.getOwner().receivedPiece(newPiece); // ... and possibly to player-specific piece
+    },
+    
+    transform: function(pieceName) {
+    	this.element.dispose();
+    	
+    	var newPiece = AbstractFactory.create(pieceName, [this.x, this.y, this.side]);
+    	$(newPiece).inject('pieces');
+    	return newPiece;
+    },
 });

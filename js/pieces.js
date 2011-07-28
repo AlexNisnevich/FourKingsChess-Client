@@ -39,6 +39,15 @@ var Pawn = new Class({
     	}
     },
     
+    transform: function(pieceName) {
+    	newPiece = this.parent(pieceName);
+    	
+    	newPiece.direction = this.direction;
+    	newPiece.setImage();
+    	
+    	return newPiece;
+    },
+    
     promote: function() {
         new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
         

@@ -21,5 +21,11 @@ var Athens = new Class({
 		this.parent(order, color);
 		this.setupPieces = [['King', 'AthensBishop', 'AthensBishop', 'AthensBishop'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
 	    this.promotionPieces = ['AthensBishop'];
+	},
+	
+	receivedPiece: function (piece) {
+		if (piece.pieceName == 'bishop') {
+			piece.transform('AthensBishop');
+		}
 	}
 });
