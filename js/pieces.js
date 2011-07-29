@@ -3,7 +3,7 @@
 var Pawn = new Class({
     Extends: Piece,
 
-    pieceName: 'pawn',
+    pieceName: 'Pawn',
     pieceChar: '',
     direction: null,
     
@@ -35,7 +35,7 @@ var Pawn = new Class({
     		(this.direction == 1 && this.x == 8) ||
     		(this.direction == 2 && this.y == 1) ||
     		(this.direction == 3 && this.x == 1)) &&
-    			(owner.promotionPieces.length != 0)) {
+    			(this.getOwner().promotionPieces.length != 0)) {
     				this.promote();
     	}
     },
@@ -55,13 +55,18 @@ var Pawn = new Class({
     	
         new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
         
-        owner.promotionPieces.each(function(pieceName) {
-            var piece = AbstractFactory.create(pieceName.capitalize(), [pawn.x, pawn.y, owner.order]);
-            piece.drag.detach();
-            piece.element.onclick = function () {
-                game.doPromote(piece);
-            };
-            piece.element.inject($('dialog'));
+        owner.promotionPieces.each(function(promotionPiece) {
+        	var pieceName = promotionPiece[0];
+        	var pieceLimit = promotionPiece[1];
+        	
+        	if (pieceLimit == 0 || owner.countPieces(pieceName) < pieceLimit) {
+        		var piece = AbstractFactory.create(pieceName, [pawn.x, pawn.y, owner.order]);
+	            piece.drag.detach();
+	            piece.element.onclick = function () {
+	                game.doPromote(piece);
+	            };
+	            piece.element.inject($('dialog'));
+        	}
         });
         
         $('overlay').show();
@@ -71,7 +76,7 @@ var Pawn = new Class({
 var Knight = new Class({
 	Extends: Piece,
 
-    pieceName: 'knight',
+    pieceName: 'Knight',
     pieceChar: 'N',
 
     canMove: function(square) {
@@ -82,7 +87,7 @@ var Knight = new Class({
 var Bishop = new Class({
 	Extends: Piece,
 
-    pieceName: 'bishop',
+    pieceName: 'Bishop',
     pieceChar: 'B',
 
     canMove: function(square) {
@@ -93,7 +98,7 @@ var Bishop = new Class({
 var Rook = new Class({
 	Extends: Piece,
 
-    pieceName: 'rook',
+    pieceName: 'Rook',
     pieceChar: 'R',
 
     canMove: function(square) {
@@ -104,7 +109,7 @@ var Rook = new Class({
 var Queen = new Class({
 	Extends: Piece,
 
-    pieceName: 'queen',
+    pieceName: 'Queen',
     pieceChar: 'Q',
 
     canMove: function(square) {
@@ -115,7 +120,7 @@ var Queen = new Class({
 var King = new Class({
 	Extends: Piece,
 
-    pieceName: 'king',
+    pieceName: 'King',
     pieceChar: 'K',
     royal: true,
 
@@ -129,7 +134,7 @@ var King = new Class({
 var AthensBishop = new Class({
 	Extends: Bishop,
 	
-	pieceName: 'bishop',
+	pieceName: 'Bishop',
 	pieceChar: 'B',
 	
 	canMove: function(square) {
@@ -154,10 +159,28 @@ var AthensBishop = new Class({
 	}
 });
 
+var SpartaWarrior = new Class({
+	Extends: Piece,
+	
+	pieceName: 'SpartaWarrior',
+	pieceChar: 'W',
+	
+	properties: {
+		protectedFromSpecialAbilityMove: true,
+		protectedFromSpecialAbilityCapture: true
+	},
+	
+	canMove: function(square) {
+		return (this.getSquare().isBishopMove(square, this.side) ||
+				this.getSquare().isRookMove(square, this.side) || 
+				this.getSquare().isKnightMove(square, this.side));
+	}
+});
+
 var MongolPawn =  new Class({
 	Extends: Pawn,
 	
-	pieceName: 'pawn',
+	pieceName: 'Pawn',
 	pieceChar: '',
 	
 	canMove: function(square) {
@@ -182,10 +205,6 @@ var MongolPawn =  new Class({
 	setImage: function() {
         this.element.addClass(this.color);
         this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
-    },
-    
-    promote: function() {
-        this.getOwner().refreshPromotionPieces();
-        this.parent();
     }
 });
+

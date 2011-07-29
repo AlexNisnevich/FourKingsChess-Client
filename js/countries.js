@@ -6,8 +6,11 @@ var DefaultCountry = new Class({
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.setupPieces = [['King', 'Rook', 'Bishop', 'Knight'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-	    this.promotionPieces = ['Rook', 'Bishop', 'Knight'];
+		this.setupPieces = [['King', 'Rook', 'Bishop', 'Knight'], 
+		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+	    this.promotionPieces = [['Rook', 0], 
+	                            ['Bishop', 0], 
+	                            ['Knight', 0]];
 	}
 });
 
@@ -19,8 +22,9 @@ var Athens = new Class({
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.setupPieces = [['King', 'AthensBishop', 'AthensBishop', 'AthensBishop'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-	    this.promotionPieces = ['AthensBishop'];
+		this.setupPieces = [['King', 'AthensBishop', 'AthensBishop', 'AthensBishop'], 
+		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+	    this.promotionPieces = [['AthensBishop', 0]];
 	    this.derivedPieces = [['Bishop', 'AthensBishop']];
 	}
 });
@@ -29,38 +33,33 @@ var Mongols = new Class({
 	Extends: Player,
 	
 	countryName: 'Mongols',
-	basePromotionPieces: ['Queen', 'Rook', 'Bishop', 'Knight'],
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.setupPieces = [['King', 'MongolPawn', 'MongolPawn', 'MongolPawn'], ['MongolPawn', 'MongolPawn', 'MongolPawn', 'MongolPawn']];
-	    this.promotionPieces = ['Queen', 'Rook', 'Bishop', 'Knight'];
+		this.setupPieces = [['King', 'MongolPawn', 'MongolPawn', 'MongolPawn'], 
+		                    ['MongolPawn', 'MongolPawn', 'MongolPawn', 'MongolPawn']];
+	    this.promotionPieces = [['Queen', 1],
+	                            ['Rook', 2], 
+	                            ['Bishop', 2], 
+	                            ['Knight', 2]];
 	    this.derivedPieces = [['Pawn', 'MongolPawn']];
-	},
-	
-	refreshPromotionPieces: function () {
-		var player = this;
-		this.promotionPieces = this.basePromotionPieces.filter(function(pieceName) {
-        	return player.canPromoteTo(pieceName.toLowerCase());
-        });
-	},
-	
-	canPromoteTo: function (pieceName) {
-		if (pieceName == 'queen') {
-			return (this.countPieces('queen') < 1);
-		} else if (pieceName == 'rook') {
-			return (this.countPieces('rook') < 2);
-		} else if (pieceName == 'bishop') {
-			return (this.countPieces('bishop') < 2);
-		} else if (pieceName == 'knight') {
-			return (this.countPieces('knight') < 2);
-		} else {
-			return true; // applies to special pieces you may have access to
-		}
-	},
-	
-	defeated: function (defeatingPlayer) {
-		this.refreshPromotionPieces();
-		this.parent(defeatingPlayer);
 	}
+});
+
+var Sparta = new Class({
+	Extends: Player,
+	
+	countryName: 'Sparta',
+	
+	initialize:function (order, color) {
+		this.parent(order, color);
+		this.setupPieces = [['King', 'SpartaWarrior', 'Pawn', 'Pawn'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+		this.promotionPieces = [['SpartaWarrior', 1],
+		                        ['Rook', 0], 
+	                            ['Bishop', 0], 
+	                            ['Knight', 0]];
+	}
+	
+	//@TODO: You are checkmated only when your king is captured twice. The first time that your king 
+	//is captured, place it anywhere in your 3x5 area at the start of your next turn.
 });

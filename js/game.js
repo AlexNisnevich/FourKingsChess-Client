@@ -230,9 +230,9 @@ var Player = new Class({
     order: 0,
     color: '',
     check: false,
-    setupPieces: null,
-    promotionPieces: null,
-    derivedPieces: null,
+    setupPieces: [],
+    promotionPieces: [],
+    derivedPieces: [],
     inGame: true,
 
     initialize: function(order, color) {
@@ -273,11 +273,28 @@ var Player = new Class({
     },
     
     defeated: function(defeatingPlayer) {
+    	// status
+    	
     	this.inGame = false;
+    	
+    	// transfer possession
     	
     	$$('#board .piece.' + this.color).each(function (piece) {
     		piece.object.transferPossession(defeatingPlayer);
     	});
+    	
+    	// merge promotionPieces
+    	
+    	var newPromotionPieces = this.promotionPieces.filter(function (promotionPiece) {
+    		return !defeatingPlayer.promotionPieces.some(function (existingPiece) {
+    			return existingPiece[0] == promotionPiece[0]; // not already in promotionPieces
+    		}) && !defeatingPlayer.derivedPieces.some(function (derivedPiece) {
+    			return derivedPiece[0] == promotionPiece[0]; // doesn't have any derived pieces
+    		});
+    	});
+    	defeatingPlayer.promotionPieces.append(newPromotionPieces);
+    	
+    	// alert
     	
     	game.alert(this.color.capitalize() + ' has been defeated.');
     },
@@ -291,7 +308,7 @@ var Player = new Class({
     
     receivedPiece: function(piece) {
     	this.derivedPieces.each(function (derivedPiece) {
-    		if (piece.pieceName.capitalize() == derivedPiece[0]) {
+    		if (piece.pieceName == derivedPiece[0]) {
     			piece.transform(derivedPiece[1]);
     		}
     	});
@@ -530,8 +547,9 @@ var Piece = new Class({
     lastCapture: null,
     
     drag: null, // drag event handler
-    moveType: 'normal', // used by: Pawn, King
+    moveType: 'normal', // used by: Pawn, King, etc
     royal: false, // royal pieces: King
+    specialProperties: {},
 
     // setup
     
@@ -735,7 +753,7 @@ var Piece = new Class({
         
         this.setImage();
         
-        var newPiece = this.transform(this.pieceName.capitalize()); // transform to base piece ...
+        var newPiece = this.transform(this.pieceName); // transform to base piece ...
         this.getOwner().receivedPiece(newPiece); // ... and possibly to player-specific piece
     },
     
@@ -744,6 +762,7 @@ var Piece = new Class({
     	
     	var newPiece = AbstractFactory.create(pieceName, [this.x, this.y, this.side]);
     	$(newPiece).inject('pieces');
+    	newPiece.properties = this.properties;
     	return newPiece;
     },
 });
