@@ -2,8 +2,8 @@
 // GLOBAL VARIABLES
 //
 
-var squareSize = 48;
-var z = 100;
+var squareSize = 48; // width/height of squares
+var z = 100; // used by Element.pushToFront()
 
 //
 // CLASS OVERRIDES
@@ -12,25 +12,41 @@ var z = 100;
 Element.implement({
     object: null,
 
+    /*
+     * Pushes the HTML element to the front of the screen
+     */
     pushToFront: function() {
 		this.setStyle('z-index', z++);
     },
     
+    /*
+     * Shows a previously-hidden HTML element
+     */
     show: function() {
         this.setStyle('visibility','visible');
     },
     
+    /*
+     * Hides the HTML element
+     */
     hide: function() {
         this.setStyle('visibility','hidden');
     },
     
+    /*
+     * Clears the contents of the HTML element
+     */
     clear: function() {
         this.innerHTML = '';
     }
 });
 
 Array.implement({
-	// we override the usual Array.toString() function because we want to quote strings
+	
+	/*
+	 * @return a string of the form "1, 2, 'blah'" if the array is [1, 2, 'blah']
+	 * Note: We override the usual Array.toString() function because we want to quote strings
+	 */
 	toString: function() {
 		var str = '';
 		this.each(function (el) {
@@ -49,6 +65,11 @@ Array.implement({
 //
 
 var AbstractFactory = new new Class({
+	/*
+	 * @params: name = class name of object to create
+	 * 			params = arguments to the object constructor
+	 * @return a new instance of the given class
+	 */
 	create: function(name, params) {
 		return eval('new ' + name + '(' + params.toString() + ');');
 	}
@@ -59,20 +80,22 @@ var AbstractFactory = new new Class({
 //
 
 var Game = new Class({
-	players: [],
-	currentPlayer: 0,
-	currentTurn: null,
-	lastPieceMoved: null,
-	turnNum: 1,
+	players: [], // array of players
+	currentPlayer: 0, // number of current player
+	currentTurn: null, // HTML element that stores current turn's moves
+	lastPieceMoved: null, // last Piece moved
+	turnNum: 1, // current turn number
 	
-	// setup
+	// SETUP
 	
 	initialize: function() {
 		
 	},
 	
+	/*
+	 * Creates the game board
+	 */
 	setup: function() {
-		// create board
 		for (var i = 1; i <= 8; i++) {
 			for (var j = 1; j <= 8; j++) {
 				$(new Square(i, j)).inject('squares');
@@ -80,6 +103,10 @@ var Game = new Class({
 		}
 	},
 	
+	/*
+	 * @params: self-explanatory
+	 * @return a new Player given countryName and color
+	 */
 	addPlayer: function(countryName, color) {
 		var order = this.players.length;
 		var player = AbstractFactory.create(countryName, [order, color])
@@ -88,6 +115,9 @@ var Game = new Class({
 		$$('#moves .heading.' + color).appendText(player.countryName);
 	},
 	
+	/*
+	 * Calls the start of the first turn and the first player's move
+	 */
 	startGame: function() {
 		this.turnStart();
 		this.playerStart();
@@ -95,30 +125,50 @@ var Game = new Class({
 	
 	// turns and players
 	
+	/*
+	 * @params: i = player number
+	 * @return a Player given their number
+	 */
 	getPlayer: function(i) {
 		return this.players[i];
 	},
     
+	/*
+	 * @params: i = player number
+	 * @return an array of all players except the one at the given number
+	 */
     getOtherPlayers: function(i) {
 		return this.players.filter( function(player) {
     		return player.order != i;
     	});
     },
     
+    /*
+     * @return the player whose turn it is
+     */
     getCurrentPlayer: function() {
     	return this.getPlayer(this.currentPlayer);
     },
     
+    /*
+     * Prepares a turn
+     */
     turnStart: function() {
     	this.currentTurn = new Element('tr');
     	new Element('td.num').appendText(this.turnNum).inject(this.currentTurn);
 		this.currentTurn.inject('moves');
     },
     
+    /*
+     * Starts the current player's turn
+     */
     playerStart: function() {
     	this.getCurrentPlayer().startTurn();
     },
     
+    /*
+     * Moves play to the next player and starts their turn
+     */
 	nextPlayer: function() {
     	if (this.currentPlayer == this.players.length - 1) {
     		this.nextTurn();
@@ -130,6 +180,9 @@ var Game = new Class({
 		this.playerStart();
 	},
     
+	/*
+	 * Increments the turn number and starts the next turn
+	 */
     nextTurn: function() {
     	this.turnNum++;
     	this.turnStart();
@@ -137,10 +190,18 @@ var Game = new Class({
         
     // game status
 	
+    /*
+     * @params: txt = the text to display
+     * Displays a message box with the given text
+     */
     alert: function(txt) {
 		setTimeout(function () {alert (txt); }, 100)
 	},
 
+	/*
+	 * @returns: '##' if game over, '#' if checkmate, '+' if check, '' otherwise
+	 * Checks for game over, checkmate, check
+	 */
 	checkChecks: function() {
 		var game = this;
 		var cp = this.getCurrentPlayer();
@@ -176,18 +237,17 @@ var Game = new Class({
 		return suffix;
 	},
 
+	/*
+	 * @params: winner = Player that won the game
+	 * Displays victory status
+	 */
 	gameOver: function(winner) {
 		$$('#board .piece').each(function(piece) {
 			piece.object.transferPossession(winner);
 			piece.object.drag.detach();
 		});
 		
-		if (typeof(winner) == 'string') {
-			var outcomeText = winner;
-		} else {
-			var outcomeText = winner.color.capitalize() + ' wins.';
-		}
-		
+		var outcomeText = winner.color.capitalize() + ' wins.';
 		var outcome = new Element('div.outcome');
 		outcome.appendText(outcomeText);
 		setTimeout(function () {outcome.inject('sidebar')}, 100);
@@ -195,6 +255,10 @@ var Game = new Class({
 	
 	// pieces
 	
+	/*
+	 * @params: choice = the Piece the player has selected to promote to
+	 * Promotes the last-moved piece to the chosen piece
+	 */
 	doPromote: function(choice) {
 	    var pawn = this.lastPieceMoved;
 	    
@@ -209,11 +273,18 @@ var Game = new Class({
 
 	// moves
 	
+	/*
+	 * @params: txt = move text to display
+	 * Displays the given text on the move table
+	 */
 	displayMove: function(txt) {
 		var move = new Element('td.move');
 		move.appendText(txt).inject(this.currentTurn);		
 	},
 		
+	/*
+	 * Retrieves the HTML element containing the text of the last move
+	 */
 	getLastMoveText: function() {
 		return $$('#moves .move').filter(function (el) {
 			return el.innerHTML != '--';
@@ -222,6 +293,9 @@ var Game = new Class({
 
 	// misc GUI
 
+	/*
+	 * Hides any currently open dialog
+	 */
 	hideDialog: function() {
 	    $('dialog').clear();
 	    $('overlay').hide();
@@ -229,51 +303,70 @@ var Game = new Class({
 });
 
 var Player = new Class({
-    order: 0,
-    color: '',
-    check: false,
-    setupPieces: [],
-    promotionPieces: [],
-    derivedPieces: [],
-    inGame: true,
+    order: 0, // the player's number, starting from 0
+    color: '', // color of the player's pieces
 
+    check: false, // is the player currently in check?
+    inGame: true, // is the player currently in the game?
+
+    setupPieces: [], // starting setup: 2-dimensional array, where the first row is the bottom row, etc.
+    promotionPieces: [], // stores pieces that the player's pawns can promote to, and the number that can
+    					 // be on the board at once (0 for infinite)
+    derivedPieces: [], // stores pieces that the player has that modify existing pieces
+    				   // e.g. [['Bishop', 'AthensBishop']]
+
+    /*
+     * Creates a new player with the given order and color
+     */
     initialize: function(order, color) {
         this.order = order;
         this.color = color;
     },
     
+    /*
+     * Sets up the player's pieces
+     */
     setup: function() {
     	var player = this;
     	var rowNum = 1, colNum;
     	this.setupPieces.each( function (row) {
     		colNum = 1;
     		row.each( function (piece) {
-    			player.placePiece(piece, rowNum, colNum, player.order);
+    			player.placePiece(piece, rowNum, colNum);
     			colNum++;
     		});
     		rowNum++;
     	});
     },
     
-    placePiece: function(pieceName, row, col, order) {
+    /*
+     * @params: pieceName = class of the piece
+     * 			row, col = location of the piece
+     * Places a piece of the given class at the given location
+     */
+    placePiece: function(pieceName, row, col) {
     	var piece;
-    	switch (order) {
+    	switch (this.order) {
 	    	case 0:
-	    		piece = AbstractFactory.create(pieceName, [col, row, order]);
+	    		piece = AbstractFactory.create(pieceName, [col, row, this.order]);
 	    		break;
 	    	case 1:
-	    		piece = AbstractFactory.create(pieceName, [row, 9 - col, order]);
+	    		piece = AbstractFactory.create(pieceName, [row, 9 - col, this.order]);
 	    		break;
 			case 2:
-				piece = AbstractFactory.create(pieceName, [9 - col, 9 - row, order]);
+				piece = AbstractFactory.create(pieceName, [9 - col, 9 - row, this.order]);
 	    		break;
 			case 3:
-				piece = AbstractFactory.create(pieceName, [9 - row, col, order]);
+				piece = AbstractFactory.create(pieceName, [9 - row, col, this.order]);
 	    		break;
     	}
     	$(piece).inject('pieces');
     },
     
+    /*
+     * @params: defeatingPlayer = the player that defeated this player
+     * Called when this player is defeated
+     */
     defeated: function(defeatingPlayer) {
     	// status
     	
@@ -301,6 +394,10 @@ var Player = new Class({
     	game.alert(this.color.capitalize() + ' has been defeated.');
     },
     
+    /*
+     * Starts the player's turn. 
+     * By default, checks if the player is still in the game and skips turn if not.
+     */
     startTurn: function() {
     	if (!this.inGame) {
      		game.displayMove('--');
@@ -308,6 +405,10 @@ var Player = new Class({
     	}
     },
     
+    /*
+     * @params: piece = the Piece that was received
+     * Called when the player takes possession of an opponent's piece
+     */
     receivedPiece: function(piece) {
     	this.derivedPieces.each(function (derivedPiece) {
     		if (piece.pieceName == derivedPiece[0]) {
@@ -316,6 +417,11 @@ var Player = new Class({
     	});
     },
     
+    /*
+     * @params: pieceName = class of piece
+     * @return the number of pieces of the given class this player currently
+     * has on the board
+     */
     countPieces: function(pieceName) {
     	return $$('#board .' + this.color).filter(function (piece) {
     		return (piece.object.pieceName == pieceName);
@@ -325,8 +431,11 @@ var Player = new Class({
 
 var Square = new Class({
     x: 0,
-    y: 0,
+    y: 0, // position of the square on the board, from (1,1) at bottom-left to (8,8)
 
+    /*
+     * Creates a square at the given position
+     */
     initialize: function(x, y) {
         this.x = x;
         this.y = y;
@@ -345,22 +454,40 @@ var Square = new Class({
         }
     },
 
+    /*
+     * @return the HTML element corresponding to this square 
+     */
     toElement: function() {
         return this.element;
     },
     
+    /*
+     * @return the algebraic notation corresponding to this square's position
+     */
     toString: function() {
     	return String.fromCharCode('a'.charCodeAt(0) - 1 + this.x) + this.y;
     },
 
+    /*
+     * @params: square = another Square
+     * @return whether this square and the given square share the same position
+     */
     equals: function(square) {
         return (this.x == square.x && this.y == square.y);
     },
     
+    /*
+     * @params: square = another Square
+     * @return the distance (in horizontal/vertical movements) between 
+     * this square and the given square
+     */
     distance: function(square) {
     	return (Math.abs(this.x - square.x) + Math.abs(this.y - square.y));
     },
 
+    /*
+     * @return the Piece currently occupying this square or null if the square is empty
+     */
     getPiece: function() {
         var square = this;
         var occupied = null;
@@ -376,6 +503,10 @@ var Square = new Class({
         }
     },
     
+    /*
+     * @params: xOffset, yOffset specify a relative position to this square
+     * @returns the square that is xOffset to the right and yOffset above this square
+     */
     getAdjacentSquare: function(xOffset, yOffset) {
     	var currentSquare = this;
     	var adjacent = null;
@@ -391,6 +522,12 @@ var Square = new Class({
         }
     },
 
+    /*
+     * @params: side = optional parameter specifying the order of the Player we're looking for
+     * If side is not specified, @return whether this square is occupied by a piece.
+     * If side is specified, @return whether this square is occupied by a piece belonging
+     * to the given player.
+     */
     isOccupied: function(side) {
         var square = this;
         var query = '#board .piece';
@@ -406,6 +543,13 @@ var Square = new Class({
         });
     },
 
+    /*
+     * @params: dest = destination square
+     * 			dir = 'horizontal', 'vertical', 'diagonalUp', 'diagonalDown'
+     * 			side = optional parameter specifying the order of the Player we're looking for
+     * @return whether the line from the current square in the given direction to the
+     * given square is occupied at any point (either by any player or by the given player)
+     */
     isLineOccupied: function(dest, dir, side) {
         switch (dir) {
         case 'horizontal':
@@ -456,6 +600,11 @@ var Square = new Class({
         return false;
     },
     
+    /*
+     * @params: sides = Players to check
+     * @return: whether this square is being threatened by a piece belonging to
+     * any of the given players
+     */
     isThreatenedBy: function(sides) {
     	var square = this;
     	var isThreatened = false;
@@ -472,6 +621,11 @@ var Square = new Class({
 		return isThreatened;
     },
 
+    /*
+     * @params: dest = destination Square
+     * 			dir = direction the pawn moves in (corresponds to player order: 0 = up, etc)
+     * @returns whether a pawn could move from here to dest as a regular pawn move
+     */
     isPawnMove: function(dest, dir) {
     	switch (dir) {
     	case 0:
@@ -485,6 +639,11 @@ var Square = new Class({
     	}
     },
 
+    /*
+     * @params: dest = destination Square
+     * 			dir = direction the pawn moves in (corresponds to player order: 0 = up, etc)
+     * @returns whether a pawn could move from here to dest as a double-pawn move
+     */
     isPawnDoubleMove: function(dest, dir) {
     	switch (dir) {
     	case 0:
@@ -498,6 +657,11 @@ var Square = new Class({
     	}
     },
 
+    /*
+     * @params: dest = destination Square
+     * 			dir = direction the pawn moves in (corresponds to player order: 0 = up, etc)
+     * @returns whether a pawn could capture from here to dest
+     */
     isPawnCapture: function(dest, dir, side) {
     	if (dest.isOccupied() && !dest.isOccupied(side)) {
 	    	switch (dir) {
@@ -515,6 +679,11 @@ var Square = new Class({
     	}
     },
 
+    /*
+     * @params: dest = destination Square
+     * 			side = order of the given piece's owner
+     * @returns whether a knight could move from here to dest
+     */
     isKnightMove: function(dest, side) {
         var x1 = this.x,
             x2 = dest.x,
@@ -523,10 +692,21 @@ var Square = new Class({
         return (!dest.isOccupied(side) && (((y2 == y1 + 2 || y2 == y1 - 2) && (x2 == x1 + 1 || x2 == x1 - 1)) || ((y2 == y1 + 1 || y2 == y1 - 1) && (x2 == x1 + 2 || x2 == x1 - 2))));
     },
 
+    /*
+     * @params: dest = destination Square
+     * 			side = order of the given piece's owner
+     * @returns whether there is a valid diagonal move from here to dest
+     */
     isBishopMove: function(dest, side) {
         return ((dest.y - dest.x == this.y - this.x && !this.isLineOccupied(dest, 'diagonalUp', side)) || (dest.x + dest.y == this.x + this.y && !this.isLineOccupied(dest, 'diagonalDown', side)));
     },
     
+    /*
+     * @params: dest = destination Square
+     * 			side = order of the given piece's owner
+     * 			length = jump length
+     * @returns whether there is a valid diagonal jump of the given length from here to dest
+     */
     isBishopJump: function(dest, side, length) {
     	var x1 = this.x,
 	        x2 = dest.x,
@@ -537,10 +717,21 @@ var Square = new Class({
 	    		   (y2 == y1 - length || y2 == y1 + length);
     },
 
+    /*
+     * @params: dest = destination Square
+     * 			side = order of the given piece's owner
+     * @returns whether there is a valid lateral move from here to dest
+     */
     isRookMove: function(dest, side) {
         return ((dest.y == this.y && !this.isLineOccupied(dest, 'horizontal', side)) || (dest.x == this.x && !this.isLineOccupied(dest, 'vertical', side)));
     },
     
+    /*
+     * @params: dest = destination Square
+     * 			side = order of the given piece's owner
+     * 			length = jump length
+     * @returns whether there is a valid lateral jump of the given length from here to dest
+     */
     isRookJump: function(dest, side, length) {
     	var x1 = this.x,
 	        x2 = dest.x,
@@ -551,10 +742,19 @@ var Square = new Class({
 					 (y2 == y1 && (x2 == x1 - length || x2 == x1 + length)));
     },
 
+    /*
+     * @params: dest = destination Square
+     * 			side = order of the given piece's owner
+     * @returns whether a king could move from here to dest
+     */
     isKingMove: function(dest, side) {
         return (!dest.isOccupied(side) && (dest.x == this.x || dest.x == this.x - 1 || dest.x == this.x + 1) && (dest.y == this.y || dest.y == this.y - 1 || dest.y == this.y + 1));
     },
     
+    /*
+     * @returns the number of the player whose 2x4 starting region this square
+     * is in, or -1 if the square is not in a 2x4 starting region
+     */
     inTwoByFour: function() {
     	if (this.x <= 4 && this.y <= 2) {
     		return 0;
@@ -572,23 +772,28 @@ var Square = new Class({
 
 var Piece = new Class({
     x: 0,
-    y: 0,
-    pieceName: '',
-    pieceChar: '',
-    side: null,
-    color: null,
+    y: 0, // position of the piece on the board, from (1,1) at bottom-left to (8,8)
+    pieceName: '', // base name of the piece 
+    pieceChar: '', // the piece's character representation in algebraic notation
+    side: null, // the order of this piece's owner
+    color: null, // color of the piece's image
     
-    moved: false,
-    lastPosition: null,
-    lastCapture: null,
+    moved: false, // has this piece moved?
+    lastPosition: null, // the Square this piece was in last, or null
+    lastCapture: null, // the piece this piece captured last, or null
     
     drag: null, // drag event handler
     moveType: 'normal', // used by: Pawn, King, etc
     royal: false, // royal pieces: King
-    specialProperties: {},
+    specialProperties: {}, // holds special properties pertaining to powers
 
-    // setup
+    //
+    // SETUP
+    //
     
+    /*
+     * Creates a piece with the given position and owner
+     */
     initialize: function(x, y, side) {
 		if (!game) {return;}
 	
@@ -610,6 +815,9 @@ var Piece = new Class({
         }
     },
 
+    /*
+     * Refreshes this piece's position on the board and sets any relevant CSS classes
+     */
     refresh: function() {
         this.element.setStyle('left', ((this.x - 1) * squareSize) + 'px');
         this.element.setStyle('top', ((8 - this.y) * squareSize) + 'px');
@@ -619,15 +827,22 @@ var Piece = new Class({
         }
     },
 
+    /*
+     * Sets the piece's image
+     */
     setImage: function() {
         this.element.addClass(this.color);
         this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
     },
     
+    /*
+     * Creates the piece's drag event
+     */
     addDragEvent: function() {
     	this.drag = this.toElement().makeDraggable({
     	    droppables: $$('.square'),
     	
+    	    // called when the piece is picked up
     	    onStart: function(draggable) {
     			draggable.pushToFront();
     	        draggable.addClass('grabbing');
@@ -643,6 +858,7 @@ var Piece = new Class({
     	        })
     	    },
     	
+    	    // called when the piece is dragged over a square
     	    onEnter: function(draggable, droppable) {
     	        $$('.square').removeClass('hoverGreen').removeClass('hoverRed');
     	
@@ -657,6 +873,7 @@ var Piece = new Class({
     	        }
     	    },
     	
+    	    // called when the piece is dropped in a square
     	    onDrop: function(draggable, droppable) {
     	        $$('.square').removeClass('hoverGreen').removeClass('hoverRed').removeClass('hoverBlue');
     	        draggable.removeClass('grabbing');
@@ -673,27 +890,49 @@ var Piece = new Class({
     	});
     },
 
-    // getters
+    //
+    // GETTERS
+    //
     
+    /*
+     * @return the HTML element corresponding to this piece
+     */
     toElement: function() {
         this.refresh();
         return this.element;
     },
 
+    /*
+     * @return the square this piece is in (technically, a copy thereof)
+     */
     getSquare: function() {
         return new Square(this.x, this.y);
     },
     
+    /*
+     * @return the Player who controls this piece
+     */
     getOwner: function(player) {
     	return game.getPlayer(this.side);
     },
     
-    // movement
-
+    //
+    // MOVEMENT
+    //
+    
+    /*
+     * @params: square = destination Square
+     * @return whether this piece can move to the given square
+     */
     canMove: function(square) {
         return true; // override this method
     },
 
+    /*
+     * @params: square = destination Square
+     * @return whether this piece would place any player in check after
+     * moving to the given square
+     */
     isMoveCheck: function(square) {
     	var piece = this;
     	var oldX = this.x, oldY = this.y;
@@ -707,6 +946,13 @@ var Piece = new Class({
     	return result;
     },
 
+    /*
+     * @params: square = destination Square
+     * 			type = optional parameter, set to "free" to move the piece outside 
+     * 				   of the normal chain of events
+     * Moves the piece to the given square, handles capture if there is any,
+     * checks game state, displays move, starts next player's turn.
+     */
     moveTo: function(square, type) {
         if (!this.getSquare().equals(square)) {
         	// For algebraic notation
@@ -751,28 +997,49 @@ var Piece = new Class({
         }
     },
     
+    /*
+     * Called after a piece is moved by a player.
+     */
     afterMove: function() {
     	// override this method
     },
-     
-    // capture
-
+    
+    //
+    // CAPTURE
+    //
+    
+    /*
+     * @params: piece = target Piece
+     * @return whether this piece can capture the given piece
+     */
     canCapture: function(piece) {
     	return this.canMove(piece.getSquare());
     },
 
+    /*
+     * @params: piece = target Piece
+     * Captures the given piece.
+     */
     capture: function(piece) {
     	this.lastCapture = piece;
         piece.captured();
         piece.element.inject('graveyard');
     },
     
+    /*
+     * Called when this piece is captured.
+     */
     captured: function() {
     	this.drag.detach();
     },
     
-    // misc
+    //
+    // MISC
+    //
     
+    /*
+     * @return whether this piece is royal and currently in check
+     */
 	inCheck: function() {
 		if (!this.royal) {
 			return false;
@@ -781,6 +1048,10 @@ var Piece = new Class({
 		}
     },
     
+    /*
+     * @params: player = Player to give this piece to
+     * Transfers control of this piece to another player.
+     */
     transferPossession: function(player) {
         this.element.removeClass(this.color);
 
@@ -793,6 +1064,11 @@ var Piece = new Class({
         this.getOwner().receivedPiece(newPiece); // ... and possibly to player-specific piece
     },
     
+    /*
+     * @params: pieceName = class name of piece to transform into
+     * "Transforms" this piece into a piece of the given type.
+     * @return the Piece that was created
+     */
     transform: function(pieceName) {
     	this.element.dispose();
     	
