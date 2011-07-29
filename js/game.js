@@ -505,7 +505,7 @@ var Square = new Class({
     
     /*
      * @params: xOffset, yOffset specify a relative position to this square
-     * @returns the square that is xOffset to the right and yOffset above this square
+     * @return the square that is xOffset to the right and yOffset above this square
      */
     getAdjacentSquare: function(xOffset, yOffset) {
     	var currentSquare = this;
@@ -758,11 +758,11 @@ var Square = new Class({
     inTwoByFour: function() {
     	if (this.x <= 4 && this.y <= 2) {
     		return 0;
-    	} else if (this.x <= 2 && this.y >= 6) {
+    	} else if (this.x <= 2 && this.y >= 5) {
     		return 1;
-    	} else if (this.x >= 6 && this.y >= 8) {
+    	} else if (this.x >= 5 && this.y >= 7) {
     		return 2;
-    	} else if (this.x >= 8 && this.y <= 4) {
+    	} else if (this.x >= 7 && this.y <= 4) {
     		return 3;
     	} else {
     		return -1;
