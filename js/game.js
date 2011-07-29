@@ -526,14 +526,48 @@ var Square = new Class({
     isBishopMove: function(dest, side) {
         return ((dest.y - dest.x == this.y - this.x && !this.isLineOccupied(dest, 'diagonalUp', side)) || (dest.x + dest.y == this.x + this.y && !this.isLineOccupied(dest, 'diagonalDown', side)));
     },
+    
+    isBishopJump: function(dest, side, length) {
+    	var x1 = this.x,
+	        x2 = dest.x,
+	        y1 = this.y,
+	        y2 = dest.y;
+    	return !dest.isOccupied(side) && 
+	    		   (x2 == x1 + length || x2 == x1 - length) && 
+	    		   (y2 == y1 - length || y2 == y1 + length);
+    },
 
     isRookMove: function(dest, side) {
         return ((dest.y == this.y && !this.isLineOccupied(dest, 'horizontal', side)) || (dest.x == this.x && !this.isLineOccupied(dest, 'vertical', side)));
     },
+    
+    isRookJump: function(dest, side, length) {
+    	var x1 = this.x,
+	        x2 = dest.x,
+	        y1 = this.y,
+	        y2 = dest.y;
+    	return !dest.isOccupied(side) && 
+					((x2 == x1 && (y2 == y1 - length || y2 == y1 + length)) || 
+					 (y2 == y1 && (x2 == x1 - length || x2 == x1 + length)));
+    },
 
     isKingMove: function(dest, side) {
         return (!dest.isOccupied(side) && (dest.x == this.x || dest.x == this.x - 1 || dest.x == this.x + 1) && (dest.y == this.y || dest.y == this.y - 1 || dest.y == this.y + 1));
-    }
+    },
+    
+    inTwoByFour: function() {
+    	if (this.x <= 4 && this.y <= 2) {
+    		return 0;
+    	} else if (this.x <= 2 && this.y >= 6) {
+    		return 1;
+    	} else if (this.x >= 6 && this.y >= 8) {
+    		return 2;
+    	} else if (this.x >= 8 && this.y <= 4) {
+    		return 3;
+    	} else {
+    		return -1;
+    	}
+    },
 });
 
 var Piece = new Class({

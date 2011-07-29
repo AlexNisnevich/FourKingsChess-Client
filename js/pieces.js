@@ -208,18 +208,27 @@ var PapalBishop = new Class({
 	Extends: Bishop,
 
 	canMove: function(square) {
-		var pos = this.getSquare();
-		var x1 = pos.x,
-			x2 = square.x,
-			y1 = pos.y,
-			y2 = square.y;
-	
-        return (this.getSquare().isBishopMove(square, this.side)|| 
-        		(x2 == x1 + 2 && ((y2 == y1 - 2) || (y2 == y1 + 2))) || 
-        		(x2 == x1 - 2 && ((y2 == y1 - 2) || (y2 == y1 + 2))) );
+		return (this.parent(square) || 
+        		this.getSquare().isBishopJump(square, this.side, 2));
+    },
+    
+    afterMove: function() {
+        if (this.getSquare().inTwoByFour() != -1 && this.getSquare().inTwoByFour() != this.owner) {
+        	this.transform('ArchBishop');
+        	game.getLastMoveText().appendText('=AB');
+	    };
     }
+});
 
-	// TODO: Whenever one of your bishops moves into another player’s 2x4, it promotes to an archbishop.
-	// Archbishops can move like regular Papal States bishops, but can also jump one or two squares 
-	// horizontally or vertically.
+var ArchBishop = new Class({
+	Extends: PapalBishop,
+
+    pieceName: 'ArchBishop',
+    pieceChar: 'AB',
+
+    canMove: function(square) {
+		return (this.parent(square) || 
+        		this.getSquare().isKingMove(square, this.side) ||
+        		this.getSquare().isRookJump(square, this.side, 2))
+    }
 });
