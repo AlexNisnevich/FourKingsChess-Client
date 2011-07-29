@@ -215,7 +215,9 @@ var Game = new Class({
 	},
 		
 	getLastMoveText: function() {
-		return $$('#moves .move').getLast();
+		return $$('#moves .move').filter(function (el) {
+			return el.innerHTML != '--';
+		}).getLast();
 	},
 
 	// misc GUI

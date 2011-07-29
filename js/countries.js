@@ -46,6 +46,20 @@ var Mongols = new Class({
 	}
 });
 
+var PapalStates = new Class({
+	Extends: Player,
+	
+	countryName: 'PapalStates',
+	
+	initialize: function (order, color) {
+		this.parent(order, color);
+		this.setupPieces = [['King', 'PapalBishop', 'PapalBishop', 'PapalBishop'], 
+		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+	    this.promotionPieces = [['PapalBishop', 0]];
+	    this.derivedPieces = [['Bishop', 'PapalBishop']];
+	}
+});
+
 var Sparta = new Class({
 	Extends: Player,
 	
