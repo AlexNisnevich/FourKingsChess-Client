@@ -131,6 +131,30 @@ var King = new Class({
 
 // SPECIAL PIECES
 
+var Minister = new Class({
+	Extends: Piece,
+	
+	pieceName: 'Minister',
+	pieceChar: 'M',
+	royal: true,
+	
+	canMove: function(square) {
+		if (this.getSquare().isKingMove(square, this.side)) {
+			this.moveType = 'normal';
+		} else if (this.getSquare().isKnightMove(square, this.side) && !this.getOwner().wasLastMoveKnightMove) {
+			this.moveType = 'knightMove';
+		} else {
+			return false;
+		}
+		
+		return true;
+	},
+	
+	afterMove: function() {
+		this.getOwner().wasLastMoveKnightMove = (this.moveType == 'knightMove');
+	}
+});
+
 var SpartaWarrior = new Class({
 	Extends: Piece,
 	
