@@ -938,9 +938,14 @@ var Piece = new Class({
     	var oldX = this.x, oldY = this.y;
     	this.x = square.x; this.y = square.y;
     		
-    	var result = $$('#board .royal').some(function(royalPiece) {
-			return piece.canMove(royalPiece.object.getSquare());
-		});
+    	var result = game.players.some(function (player) {
+    		return $$('#board .royal.' + player.color).length == 1 && 
+    			   $$('#board .royal.' + player.color).some(function(royalPiece) {
+    			return piece.canMove(royalPiece.object.getSquare());
+    		});
+    	});
+    		
+    	
     	
     	this.x = oldX; this.y = oldY;
     	return result;
