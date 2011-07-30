@@ -217,7 +217,7 @@ var Game = new Class({
 		} else {
 			this.getOtherPlayers(cp.order).each(function(player) {			
 				var defeated = ($$('#board .royal.' + player.color).length == 0);
-				var check = $$('.royal.' + player.color).every(function (royalPiece) { return royalPiece.object.inCheck(); });
+				var check = $$('#board .royal.' + player.color).every(function (royalPiece) { return royalPiece.object.inCheck(); });
 				
 				if (defeated) {
 					if (player.inGame) {
@@ -308,14 +308,16 @@ var Player = new Class({
 
     check: false, // is the player currently in check?
     inGame: true, // is the player currently in the game?
-
+    
     setupPieces: [], // starting setup: 2-dimensional array, where the first row is the bottom row, etc.
     promotionPieces: [], // stores pieces that the player's pawns can promote to, and the number that can
     					 // be on the board at once (0 for infinite)
     derivedPieces: [], // stores pieces that the player has that modify existing pieces
     				   // e.g. [['Bishop', 'AthensBishop']]
 
-    /*
+    lastMoveType: 'normal', // moveType of last Piece moved by this player
+
+   /*
      * Creates a new player with the given order and color
      */
     initialize: function(order, color) {
@@ -403,6 +405,16 @@ var Player = new Class({
      		game.displayMove('--');
        		game.nextPlayer();
     	}
+    },
+    
+    /*
+     * @params: piece = the Piece that was moved this turn
+     * Ends the player's turn. 
+     * By default, sets lastMoveType.
+     */
+    
+    endTurn: function(piece) {
+    	this.lastMoveType = piece.moveType;
     },
     
     /*
@@ -881,8 +893,17 @@ var Piece = new Class({
     	        var piece = draggable.object;
     	
     	        if (droppable && piece.side == game.currentPlayer && piece.canMove(droppable.object)) {
-    	            piece.moveTo(droppable.object);
+    	            var moveTxt = piece.moveTo(droppable.object);
+    	            game.displayMove(moveTxt);
+    	            
     	            piece.afterMove();
+    	            game.getCurrentPlayer().endTurn(piece);
+    	            
+    	            var suffix = game.checkChecks();
+    	            game.getLastMoveText().appendText(suffix);
+    	            
+    	            game.lastPieceMoved = piece;
+    	            game.nextPlayer();
     	        } else {
     	            piece.refresh();
     	        }
@@ -944,8 +965,6 @@ var Piece = new Class({
     			return piece.canMove(royalPiece.object.getSquare());
     		});
     	});
-    		
-    	
     	
     	this.x = oldX; this.y = oldY;
     	return result;
@@ -953,53 +972,34 @@ var Piece = new Class({
 
     /*
      * @params: square = destination Square
-     * 			type = optional parameter, set to "free" to move the piece outside 
-     * 				   of the normal chain of events
-     * Moves the piece to the given square, handles capture if there is any,
-     * checks game state, displays move, starts next player's turn.
+     * @return move's algebraic notation
+     * Moves the piece to the given square, handles capture if there is any.
      */
     moveTo: function(square, type) {
-        if (!this.getSquare().equals(square)) {
-        	// For algebraic notation
-        	
-        	var startStr = this.getSquare().toString();
-        	var destStr = square.toString();
-        	var verb = '-'; var suffix = '';
-            
-            // Handle capture, special move
-            
-        	this.lastCapture = null;
-            if (square.isOccupied()) {
-            	verb = 'x';
-                this.capture(square.getPiece());
-            }
-            
-            // Apply the move
-
-            this.lastPosition = this.getSquare();
-            this.x = square.x;
-            this.y = square.y;
-            this.refresh();
-
-            if (type != 'free') {
-                // Check checks
-            	
-            	suffix += game.checkChecks();
-            	
-            	// Display algebraic notation
-            	
-            	if (verb == '0-0' || verb == '0-0-0') {
-					game.displayMove(verb);
-				} else {
-					game.displayMove(this.pieceChar + startStr + verb + destStr + suffix);
-            	}
-            	
-            	// Change game vars
-            	
-            	game.lastPieceMoved = this;
-	            game.nextPlayer();
-            }
+        // Set up algebraic notation
+    	
+    	var startStr = this.getSquare().toString();
+    	var destStr = square.toString();
+    	var verb = '-';
+        
+        // Handle capture, special move
+        
+    	this.lastCapture = null;
+        if (square.isOccupied()) {
+        	verb = 'x';
+            this.capture(square.getPiece());
         }
+        
+        // Apply the move
+
+        this.lastPosition = this.getSquare();
+        this.x = square.x;
+        this.y = square.y;
+        this.refresh();
+
+    	// Return algebraic notation
+    	
+    	return this.pieceChar + startStr + verb + destStr;
     },
     
     /*

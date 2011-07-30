@@ -19,7 +19,6 @@ var Athens = new Class({
 	Extends: Player,
 	
 	countryName: 'Athens',
-	wasLastMoveTeleport: false,
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -36,7 +35,7 @@ var Britain = new Class({
 	
 	countryName: 'Britain',
 	
-	initialize:function (order, color) {
+	initialize: function (order, color) {
 		this.parent(order, color);
 		this.setupPieces = [['Minister', 'Minister', 'Minister', 'Minister'],['Pawn', 'Pawn', 'Pawn', 'Pawn']];
 		this.promotionPieces = [['Minister', 0]];

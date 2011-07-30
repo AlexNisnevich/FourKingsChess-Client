@@ -141,17 +141,14 @@ var Minister = new Class({
 	canMove: function(square) {
 		if (this.getSquare().isKingMove(square, this.side)) {
 			this.moveType = 'normal';
-		} else if (this.getSquare().isKnightMove(square, this.side) && !this.getOwner().wasLastMoveKnightMove) {
+		} else if (this.getSquare().isKnightMove(square, this.side) && 
+				   this.getOwner().lastMoveType != 'knightMove') {
 			this.moveType = 'knightMove';
 		} else {
 			return false;
 		}
 		
 		return true;
-	},
-	
-	afterMove: function() {
-		this.getOwner().wasLastMoveKnightMove = (this.moveType == 'knightMove');
 	}
 });
 
@@ -181,7 +178,8 @@ var AthensBishop = new Class({
 	canMove: function(square) {
 		if (this.parent(square)) {
 			this.moveType = 'normal';
-		} else if (!square.isOccupied() && !this.isMoveCheck(square) && !this.getOwner().wasLastMoveTeleport) {
+		} else if (!square.isOccupied() && !this.isMoveCheck(square) && 
+				   this.getOwner().lastMoveType != 'teleport') {
 			this.moveType = 'teleport';
 		} else {
 			return false;
@@ -193,9 +191,6 @@ var AthensBishop = new Class({
 	afterMove: function() {
 		if (this.moveType == 'teleport') {
 			game.getLastMoveText().appendText(' T');
-			this.getOwner().wasLastMoveTeleport = true;
-		} else {
-			this.getOwner().wasLastMoveTeleport = false;
 		}
 	}
 });
@@ -237,7 +232,7 @@ var PapalBishop = new Class({
     },
     
     afterMove: function() {
-        if (this.getSquare().inTwoByFour() != -1 && this.getSquare().inTwoByFour() != this.owner) {
+        if (this.getSquare().inTwoByFour() != -1 && this.getSquare().inTwoByFour() != this.getOwner().order) {
         	this.transform('ArchBishop');
         	game.getLastMoveText().appendText('=AB');
 	    };
