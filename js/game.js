@@ -121,6 +121,7 @@ var Game = new Class({
 	startGame: function() {
 		this.turnStart();
 		this.playerStart();
+		this.clearAlert();
 	},
 	
 	// turns and players
@@ -192,10 +193,17 @@ var Game = new Class({
 	
     /*
      * @params: txt = the text to display
-     * Displays a message box with the given text
+     * Displays an alert with the given text
      */
     alert: function(txt) {
-		setTimeout(function () {alert (txt); }, 100)
+		$('alert').innerText = txt;
+	},
+	
+	/*
+     * Clears alert
+     */
+	clearAlert: function(txt) {
+		this.alert('');
 	},
 
 	/*
@@ -208,6 +216,8 @@ var Game = new Class({
 		var suffix = '';
 		
 		cp.check = false;
+		
+		this.clearAlert(); // first, clear existing alert
 		
 		if (this.getOtherPlayers(cp.order).every(function (player) {
 			return ($$('#board .royal.' + player.color).length == 0)
@@ -225,10 +235,11 @@ var Game = new Class({
 						suffix = '#';
 					}
 				} else if (check) {
+					game.alert('Check!'); // alert displays continually, but '+' is shown only 
+										  // the first time a player is checked (until his next turn)
 					if (!player.check) {
 						player.check = true;
 						suffix = '+';
-						game.alert('Check!');
 					}
 				}
 			});
@@ -397,14 +408,20 @@ var Player = new Class({
     },
     
     /*
-     * Starts the player's turn. 
-     * By default, checks if the player is still in the game and skips turn if not.
+     * Starts the player's turn.
      */
     startTurn: function() {
+    	// Skip turn if not in game
     	if (!this.inGame) {
      		game.displayMove('--');
        		game.nextPlayer();
     	}
+    	
+    	// Update "to move"
+    	var toMove = $('toMove');
+    	toMove.innerText = this.color.capitalize() + ' to move.';
+    	toMove.erase("class");
+    	toMove.addClass(this.color);
     },
     
     /*

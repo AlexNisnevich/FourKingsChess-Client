@@ -15,25 +15,35 @@
 			    <div id="squares"></div>
 			    <div id="pieces"></div>
 			</div>
-		    <div id="graveyard"></div>
+		    <div id="graveyard">
+		    	<label>Captured Pieces</label>
+		    </div>
 		</div>
 		<div id="sidebar">
-			<div id="setup">
-				<div class="selectCountry">Red: <select id="selectRed"></select></div>
-				<div class="selectCountry">Green: <select id="selectGreen"></select></div>
-				<div class="selectCountry">Yellow: <select id="selectYellow"></select></div>
-				<div class="selectCountry">Blue: <select id="selectBlue"></select></div>
-				<div id="start"><button id="startButton">Start Game</button></div>
+			<div id="movesBox">
+				<label>History</label>
+				<div id="setup">
+					<div class="selectCountry red">Red: <select id="selectRed"></select></div>
+					<div class="selectCountry green">Green: <select id="selectGreen"></select></div>
+					<div class="selectCountry yellow">Yellow: <select id="selectYellow"></select></div>
+					<div class="selectCountry blue">Blue: <select id="selectBlue"></select></div>
+					<div id="start"><button id="startButton">Start Game</button></div>
+				</div>
+				<table id="moves" style="visibility: hidden;">
+					<tr>
+						<td class="num">#</td>
+						<td class="move heading red"></td>
+						<td class="move heading green"></td>
+						<td class="move heading yellow"></td>
+						<td class="move heading blue"></td>
+					</tr>
+				</table>
 			</div>
-			<table id="moves" style="visibility: hidden;">
-				<tr>
-					<td class="num">#</td>
-					<td class="move heading red"></td>
-					<td class="move heading green"></td>
-					<td class="move heading yellow"></td>
-					<td class="move heading blue"></td>
-				</tr>
-			</table>
+			<div id="statusBox">
+				<label>Status</label>
+				<div id="toMove"></div>
+				<div id="alert"></div>
+			</div>
 		</div>
 	</div>
 	

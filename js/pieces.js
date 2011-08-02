@@ -249,5 +249,9 @@ var ArchBishop = new Class({
 		return (this.parent(square) || 
         		this.getSquare().isKingMove(square, this.side) ||
         		this.getSquare().isRookJump(square, this.side, 2))
+    },
+    
+    afterMove: function() {
+    	// blank override
     }
 });
