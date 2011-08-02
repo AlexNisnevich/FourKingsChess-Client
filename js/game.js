@@ -85,6 +85,7 @@ var Game = new Class({
 	currentTurn: null, // HTML element that stores current turn's moves
 	lastPieceMoved: null, // last Piece moved
 	turnNum: 1, // current turn number
+	movable: false, // can pieces be moved?
 	
 	// SETUP
 	
@@ -121,7 +122,8 @@ var Game = new Class({
 	startGame: function() {
 		this.turnStart();
 		this.playerStart();
-		this.clearAlert();
+		this.clearStatus();
+		this.movable = true;
 	},
 	
 	// turns and players
@@ -188,9 +190,11 @@ var Game = new Class({
     	this.turnNum++;
     	this.turnStart();
     },
-        
-    // game status
-	
+    
+    //
+    // GAME STATUS AND PLAYER INTERACTION
+	//
+    
     /*
      * @params: txt = the text to display
      * Displays an alert with the given text
@@ -200,10 +204,104 @@ var Game = new Class({
 	},
 	
 	/*
-     * Clears alert
+	 * @params: txt = the text to display
+	 * 			selectType = available types: "piece"
+	 * 			buttonType = available types: "confirmCancel"
+	 * 			selector(item) = filter function to determine whether an object is selectable
+	 * 			onAvailable(item) = callback for selectable items
+	 * 			onSelect(item) = callback for selection
+	 * 			onConfirm(selectedItem) = callback for confirm button (if any)
+	 * 			onCancel() = callback for cancel button (if any)
+	 * 			onEnd() = callback for when the prompt is cleared
+	 * Prompts a player to select something
+	 */
+	prompt: function(txt, selectType, buttonType, selector, onAvailable, onSelect, onConfirm, onCancel, onEnd) {
+		$('alert').innerText = txt;
+		
+		switch (buttonType) {
+		case 'confirmCancel':
+			$('confirmButton').show();
+			$('confirmButton').addEvent('click', function () {
+				if (game.selection) {
+					onConfirm(game.selection);
+					game.clearStatus();
+				}
+			});
+			
+			$('cancelButton').show()
+			$('cancelButton').addEvent('click', function () {
+				onCancel();
+				game.clearStatus();
+			});
+		}
+		
+		switch (selectType) {
+		case 'piece':
+			$$('#board .piece').filter(function (piece) {
+				return selector(piece);
+			}).each(function (piece) {
+				onAvailable(piece);
+				piece.addClass('clickable');
+				piece.addEvent('click', function (selectedPiece) {
+					game.selection = selectedPiece;
+					onSelect(piece);
+				})
+			});
+			break;
+		}
+		
+		this.onEndPrompt = onEnd;
+		this.movable = false;
+	},
+	
+	/*
+	 * Creates a prompt with recommended settings (see prompt() for params)
+	 */
+	promptSimple: function (txt, selectType, buttonType, selector, onConfirm) {
+		var onAvailable = function () {};
+		var onSelect = function () {};
+		var onCancel = function () {};
+		var onEnd = function () {};
+		
+		switch (selectType) {
+		case 'piece':
+			onAvailable = function (piece) {
+				piece.object.getSquare().element.addClass('hoverBlue')
+			};
+			onSelect = function (piece) {
+				$$('#board .square').removeClass('hoverGreen');
+				piece.object.getSquare().element.addClass('hoverGreen');
+			};
+			onEnd = function () {
+				$$('#board .square').removeClass('hoverBlue').removeClass('hoverGreen');
+			};
+			break;
+		}
+		
+		this.prompt(txt, selectType, buttonType, selector, onAvailable, onSelect, onConfirm, onCancel, onEnd); 
+	},
+	
+	/*
+     * Clears alert and prompt
      */
-	clearAlert: function(txt) {
+	clearStatus: function(txt) {
 		this.alert('');
+		
+		$$('#statusBox button').each (function (button) {
+			button.hide();
+			button.removeEvents('click');
+		});
+		
+		$$('#board .piece').each (function (piece) {
+			piece.removeClass('clickable');
+			piece.removeEvents('click');
+		})
+		
+		if (this.onEndPrompt) {
+			this.onEndPrompt();
+		}
+		
+		this.movable = true;
 	},
 
 	/*
@@ -217,7 +315,7 @@ var Game = new Class({
 		
 		cp.check = false;
 		
-		this.clearAlert(); // first, clear existing alert
+		this.clearStatus(); // first, clear existing alert
 		
 		if (this.getOtherPlayers(cp.order).every(function (player) {
 			return ($$('#board .royal.' + player.color).length == 0)
@@ -873,6 +971,10 @@ var Piece = new Class({
     	
     	    // called when the piece is picked up
     	    onStart: function(draggable) {
+    			if (!game.movable) {
+    				return false;
+    			}
+    		
     			draggable.pushToFront();
     	        draggable.addClass('grabbing');
     	        
@@ -889,6 +991,10 @@ var Piece = new Class({
     	
     	    // called when the piece is dragged over a square
     	    onEnter: function(draggable, droppable) {
+    	    	if (!game.movable) {
+    				return false;
+    			}
+    	    	
     	        $$('.square').removeClass('hoverGreen').removeClass('hoverRed');
     	
     	        var piece = draggable.object;
@@ -904,6 +1010,11 @@ var Piece = new Class({
     	
     	    // called when the piece is dropped in a square
     	    onDrop: function(draggable, droppable) {
+    	    	if (!game.movable) {
+    	    		draggable.object.refresh();
+    				return false;
+    			}
+    	    	
     	        $$('.square').removeClass('hoverGreen').removeClass('hoverRed').removeClass('hoverBlue');
     	        draggable.removeClass('grabbing');
     	
@@ -941,10 +1052,13 @@ var Piece = new Class({
     },
 
     /*
-     * @return the square this piece is in (technically, a copy thereof)
+     * @return the square this piece is in
      */
     getSquare: function() {
-        return new Square(this.x, this.y);
+    	var x = this.x; var y = this.y;
+    	return $$('#board .square').filter(function (square) {
+    		return (square.object.x == x && square.object.y == y);
+    	})[0].object;
     },
     
     /*
