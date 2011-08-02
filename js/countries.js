@@ -8,8 +8,7 @@ var DefaultCountry = new Class({
 		this.parent(order, color);
 		this.setupPieces = [['King', 'Rook', 'Bishop', 'Knight'], 
 		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-	    this.promotionPieces = [['King', 0],
-	                            ['Rook', 0], 
+	    this.promotionPieces = [['Rook', 0], 
 	                            ['Bishop', 0], 
 	                            ['Knight', 0]];
 	}
@@ -24,8 +23,7 @@ var Athens = new Class({
 		this.parent(order, color);
 		this.setupPieces = [['King', 'AthensBishop', 'AthensBishop', 'AthensBishop'], 
 		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-	    this.promotionPieces = [['King', 0],
-	                            ['AthensBishop', 0]];
+	    this.promotionPieces = [['AthensBishop', 0]];
 	    this.derivedPieces = [['Bishop', 'AthensBishop']];
 	}
 });
@@ -51,8 +49,7 @@ var Mongols = new Class({
 		this.parent(order, color);
 		this.setupPieces = [['King', 'MongolPawn', 'MongolPawn', 'MongolPawn'], 
 		                    ['MongolPawn', 'MongolPawn', 'MongolPawn', 'MongolPawn']];
-	    this.promotionPieces = [['King', 0],
-	                            ['Queen', 1],
+	    this.promotionPieces = [['Queen', 1],
 	                            ['Rook', 2], 
 	                            ['Bishop', 2], 
 	                            ['Knight', 2]];
@@ -69,8 +66,7 @@ var PapalStates = new Class({
 		this.parent(order, color);
 		this.setupPieces = [['King', 'PapalBishop', 'PapalBishop', 'PapalBishop'], 
 		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-	    this.promotionPieces = [['King', 0],
-	                            ['PapalBishop', 0]];
+	    this.promotionPieces = [['PapalBishop', 0]];
 	    this.derivedPieces = [['Bishop', 'PapalBishop']];
 	}
 });
@@ -83,8 +79,7 @@ var Sparta = new Class({
 	initialize:function (order, color) {
 		this.parent(order, color);
 		this.setupPieces = [['King', 'SpartaWarrior', 'Pawn', 'Pawn'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-		this.promotionPieces = [['King', 0],
-	                            ['SpartaWarrior', 1],
+		this.promotionPieces = [['SpartaWarrior', 1],
 		                        ['Rook', 0], 
 	                            ['Bishop', 0], 
 	                            ['Knight', 0]];
