@@ -242,8 +242,8 @@ var Game = new Class({
 			}).each(function (piece) {
 				onAvailable(piece);
 				piece.addClass('clickable');
-				piece.addEvent('click', function (selectedPiece) {
-					game.selection = selectedPiece;
+				piece.addEvent('click', function () {
+					game.selection = piece;
 					onSelect(piece);
 				})
 			});
@@ -274,6 +274,7 @@ var Game = new Class({
 			};
 			onEnd = function () {
 				$$('#board .square').removeClass('hoverBlue').removeClass('hoverGreen');
+				game.getCurrentPlayer().endTurn();
 			};
 			break;
 		}
@@ -298,7 +299,9 @@ var Game = new Class({
 		})
 		
 		if (this.onEndPrompt) {
-			this.onEndPrompt();
+			var onEnd = this.onEndPrompt;
+			this.onEndPrompt = null;
+			onEnd();
 		}
 		
 		this.movable = true;
@@ -524,12 +527,25 @@ var Player = new Class({
     
     /*
      * @params: piece = the Piece that was moved this turn
-     * Ends the player's turn. 
-     * By default, sets lastMoveType.
+     * @return true if game can continue, false if waiting for input
+     * Called after the player moves. 
      */
     
-    endTurn: function(piece) {
+    afterMove: function(piece) {
     	this.lastMoveType = piece.moveType;
+    	game.lastPieceMoved = piece;
+    	return true;
+    },
+    
+    /*
+     * @params: piece = the Piece that was moved this turn
+     * Ends the player's turn. 
+     */
+    
+    endTurn: function() {
+    	var suffix = game.checkChecks();
+        game.getLastMoveText().appendText(suffix);
+        game.nextPlayer();
     },
     
     /*
@@ -553,6 +569,16 @@ var Player = new Class({
     	return $$('#board .' + this.color).filter(function (piece) {
     		return (piece.object.pieceName == pieceName);
     	}).length;
+    },
+    
+    /*
+     * @params: myPiece = this player's piece being targeted
+     * 			capturingPice = opponent's piece
+     * @return whether the opponent's piece is allowed to capture the given
+     * piece belonging to this player
+     */
+    capturable: function(myPiece, capturingPiece) {
+    	return true; // override this method
     }
 });
 
@@ -981,9 +1007,10 @@ var Piece = new Class({
     	        var piece = draggable.object;
     	        
     	        $$('.square').each(function (droppable) {
-    	        	square = droppable.object;
+    	        	var square = droppable.object;
     	        	
-    	        	if (piece.canMove(square)) {
+    	        	if (piece.canMove(square) 
+    	        			&& (!square.isOccupied() || piece.canCapture(square.getPiece()))) {
     	        		droppable.addClass('hoverBlue');
     	        	}
     	        })
@@ -1000,7 +1027,9 @@ var Piece = new Class({
     	        var piece = draggable.object;
     	
     	        if (droppable && !piece.getSquare().equals(droppable.object)) {
-    	            if (piece.side == game.currentPlayer && piece.canMove(droppable.object)) {
+    	        	if (piece.side == game.currentPlayer 
+    	            		&& piece.canMove(droppable.object)
+    	            		&& (!droppable.object.isOccupied() || piece.canCapture(droppable.object.getPiece()))) {
     	                droppable.addClass('hoverGreen');
     	            } else {
     	                droppable.addClass('hoverRed');
@@ -1020,18 +1049,17 @@ var Piece = new Class({
     	
     	        var piece = draggable.object;
     	
-    	        if (droppable && piece.side == game.currentPlayer && piece.canMove(droppable.object)) {
+    	        if (droppable 
+    	        		&& piece.side == game.currentPlayer 
+    	        		&& piece.canMove(droppable.object)
+    	        		&& (!droppable.object.isOccupied() || piece.canCapture(droppable.object.getPiece()))) {
     	            var moveTxt = piece.moveTo(droppable.object);
     	            game.displayMove(moveTxt);
     	            
     	            piece.afterMove();
-    	            game.getCurrentPlayer().endTurn(piece);
-    	            
-    	            var suffix = game.checkChecks();
-    	            game.getLastMoveText().appendText(suffix);
-    	            
-    	            game.lastPieceMoved = piece;
-    	            game.nextPlayer();
+    	            if (game.getCurrentPlayer().afterMove(piece)) {
+    	            	game.getCurrentPlayer().endTurn();
+    	            }
     	        } else {
     	            piece.refresh();
     	        }
@@ -1067,7 +1095,7 @@ var Piece = new Class({
     getOwner: function(player) {
     	return game.getPlayer(this.side);
     },
-    
+        
     //
     // MOVEMENT
     //
@@ -1147,9 +1175,10 @@ var Piece = new Class({
     /*
      * @params: piece = target Piece
      * @return whether this piece can capture the given piece
+     * By default, asks the player
      */
     canCapture: function(piece) {
-    	return this.canMove(piece.getSquare());
+    	return piece.getOwner().capturable(piece, this);
     },
 
     /*
@@ -1174,10 +1203,17 @@ var Piece = new Class({
     //
     
     /*
+     * @return whether this piece is the last royal piece belonging to a player
+     */
+    isRoyal: function() {
+    	return this.royal && ($$('#board .piece.royal.' + this.getOwner().color).length == 1);
+    },
+    
+    /*
      * @return whether this piece is royal and currently in check
      */
 	inCheck: function() {
-		if (!this.royal) {
+		if (!this.isRoyal()) {
 			return false;
 		} else {
 			return this.getSquare().isThreatenedBy(game.getOtherPlayers(this.side));

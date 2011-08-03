@@ -35,8 +35,74 @@ var Britain = new Class({
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.setupPieces = [['Minister', 'Minister', 'Minister', 'Minister'],['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+		this.setupPieces = [['Minister', 'Minister', 'Minister', 'Minister'],
+		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
 		this.promotionPieces = [['Minister', 0]];
+	}
+});
+
+var Hurons = new Class({
+	Extends: Player,
+
+	countryName: 'Hurons',
+
+	initialize: function (order, color) {
+		this.parent(order, color);
+		this.setupPieces = [['King', 'HuronRook', 'HuronBishop', 'HuronBishop'], 
+		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+	    this.promotionPieces = [['HuronRook', 0], 
+	                            ['HuronBishop', 0]];
+	    this.derivedPieces = [['HuronBishop', 'Bishop'],
+	                          ['HuronRook', 'Rook']];
+	}
+});
+
+var Jerusalem = new Class({
+	Extends: Player,
+
+	countryName: 'Jerusalem',
+
+	initialize: function (order, color) {
+		this.parent(order, color);
+		this.setupPieces = [['King', 'Rook', 'Bishop', 'Knight'], 
+		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+	    this.promotionPieces = [['Rook', 0], 
+	                            ['Bishop', 0], 
+	                            ['Knight', 0]];
+	},
+	
+	startTurn: function () {
+		this.parent();
+		
+		$$('#board .piece.' + this.color).each(function (piece) {
+			piece.object.specialProperties.castle = false;
+			piece.removeClass('castle');
+		});
+	},
+	
+	afterMove: function (movedPiece) {
+		this.parent(movedPiece);
+		
+		var player = this;
+		game.promptSimple('Select a piece to protect this turn.', 
+			'piece', 
+			'confirmCancel', 
+			function (piece) { 
+				piece = piece.object;
+				return (piece.side == player.order && !piece.isRoyal() && piece != movedPiece);
+			}, 
+			function (piece) {
+				piece.object.specialProperties.castle = true;
+				piece.addClass('castle');
+				game.getLastMoveText().appendText(', [' + 
+						piece.object.pieceChar + piece.object.getSquare().toString() + ']');
+			}
+		);
+		return false;
+	},
+	
+	capturable: function (myPiece, capturingPiece) {
+		return (!myPiece.specialProperties.castle || capturingPiece.isRoyal());
 	}
 });
 

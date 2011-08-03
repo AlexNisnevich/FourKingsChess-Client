@@ -158,7 +158,7 @@ var SpartaWarrior = new Class({
 	pieceName: 'SpartaWarrior',
 	pieceChar: 'W',
 	
-	properties: {
+	specialProperties: {
 		protectedFromSpecialAbilityMove: true,
 		protectedFromSpecialAbilityCapture: true
 	},
@@ -194,6 +194,25 @@ var AthensBishop = new Class({
 		}
 	}
 });
+
+var HuronBishop = new Class({
+	Extends: Bishop,
+
+	canMove: function(square) {
+	return (this.parent(square) || 
+        this.getSquare().isBishopJump(square, this.side, 2));
+    }
+});
+
+var HuronRook = new Class({
+	Extends: Rook,
+
+	canMove: function(square) {
+	return (this.parent(square) || 
+        this.getSquare().isRookJump(square, this.side, 2));
+    }
+});
+
 
 var MongolPawn =  new Class({
 	Extends: Pawn,
