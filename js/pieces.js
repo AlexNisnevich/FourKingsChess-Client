@@ -3,6 +3,7 @@
 var Pawn = new Class({
     Extends: Piece,
 
+    pieceClass: 'Pawn',
     pieceName: 'Pawn',
     pieceChar: '',
     direction: null,
@@ -70,12 +71,19 @@ var Pawn = new Class({
         });
         
         $('overlay').show();
+    },
+    
+    export: function() {
+    	var obj = this.parent();
+    	obj.props.direction = this.direction;
+    	return obj;
     }
 });
 
 var Knight = new Class({
 	Extends: Piece,
 
+    pieceClass: 'Knight',
     pieceName: 'Knight',
     pieceChar: 'N',
 
@@ -87,6 +95,7 @@ var Knight = new Class({
 var Bishop = new Class({
 	Extends: Piece,
 
+    pieceClass: 'Bishop',
     pieceName: 'Bishop',
     pieceChar: 'B',
 
@@ -98,6 +107,7 @@ var Bishop = new Class({
 var Rook = new Class({
 	Extends: Piece,
 
+    pieceClass: 'Rook',
     pieceName: 'Rook',
     pieceChar: 'R',
 
@@ -109,6 +119,7 @@ var Rook = new Class({
 var Queen = new Class({
 	Extends: Piece,
 
+    pieceClass: 'Queen',
     pieceName: 'Queen',
     pieceChar: 'Q',
 
@@ -120,6 +131,7 @@ var Queen = new Class({
 var King = new Class({
 	Extends: Piece,
 
+    pieceClass: 'King',
     pieceName: 'King',
     pieceChar: 'K',
     royal: true,
@@ -134,6 +146,7 @@ var King = new Class({
 var Minister = new Class({
 	Extends: Piece,
 	
+    pieceClass: 'Minister',
 	pieceName: 'Minister',
 	pieceChar: 'M',
 	royal: true,
@@ -155,6 +168,7 @@ var Minister = new Class({
 var SpartaWarrior = new Class({
 	Extends: Piece,
 	
+    pieceClass: 'SpartaWarrior',
 	pieceName: 'SpartaWarrior',
 	pieceChar: 'W',
 	
@@ -175,7 +189,9 @@ var SpartaWarrior = new Class({
 var AthensBishop = new Class({
 	Extends: Bishop,
 	
-	canMove: function(square) {
+    pieceClass: 'AthensBishop',
+
+    canMove: function(square) {
 		if (this.parent(square)) {
 			this.moveType = 'normal';
 		} else if (!square.isOccupied() && !this.isMoveCheck(square) && 
@@ -198,7 +214,9 @@ var AthensBishop = new Class({
 var HuronBishop = new Class({
 	Extends: Bishop,
 
-	canMove: function(square) {
+    pieceClass: 'HuronBishop',
+
+    canMove: function(square) {
 	return (this.parent(square) || 
         this.getSquare().isBishopJump(square, this.side, 2));
     }
@@ -207,7 +225,9 @@ var HuronBishop = new Class({
 var HuronRook = new Class({
 	Extends: Rook,
 
-	canMove: function(square) {
+    pieceClass: 'HuronRook',
+
+    canMove: function(square) {
 	return (this.parent(square) || 
         this.getSquare().isRookJump(square, this.side, 2));
     }
@@ -217,7 +237,9 @@ var HuronRook = new Class({
 var MongolPawn =  new Class({
 	Extends: Pawn,
 	
-	canMove: function(square) {
+    pieceClass: 'MongolPawn',
+
+    canMove: function(square) {
 		var pos = this.getSquare();
 		return ((!square.isOccupied() && 
 					((square.x == pos.x && (square.y == pos.y + 1 || square.y == pos.y - 1)) || 
@@ -245,7 +267,9 @@ var MongolPawn =  new Class({
 var PapalBishop = new Class({
 	Extends: Bishop,
 
-	canMove: function(square) {
+    pieceClass: 'PapalBishop',
+
+    canMove: function(square) {
 		return (this.parent(square) || 
         		this.getSquare().isBishopJump(square, this.side, 2));
     },
@@ -261,6 +285,7 @@ var PapalBishop = new Class({
 var ArchBishop = new Class({
 	Extends: PapalBishop,
 
+    pieceClass: 'ArchBishop',
     pieceName: 'ArchBishop',
     pieceChar: 'AB',
 

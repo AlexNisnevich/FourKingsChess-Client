@@ -124,6 +124,9 @@ var Game = new Class({
 		this.playerStart();
 		this.clearStatus();
 		this.movable = true;
+		
+		$('setup').dispose();
+		$('moves').show();
 	},
 	
 	// turns and players
@@ -411,6 +414,80 @@ var Game = new Class({
 	hideDialog: function() {
 	    $('dialog').clear();
 	    $('overlay').hide();
+	},
+	
+	export: function() {
+		return {
+			gameVars: {
+				currentPlayer: this.currentPlayer,
+				turnNum: this.turnNum
+			},
+			players: this.players.map(function(player) {
+				return player.export();
+			}),
+			board: {
+				pieces: $$('#board .piece').map(function(piece) {
+					return piece.object.export();
+				})
+			},
+			graveyard: $$('#graveyard .piece').map(function(piece) {
+				return piece.object.export();
+			}),
+			moves: escape($('moves').innerHTML)
+		};
+	},
+	
+	import: function(gameState) {
+		var game = this;
+		var state = JSON.parse(gameState);
+		
+		// reset things, in case this is called in the middle of a game
+		$$('.piece').dispose();
+		game.players = [];
+		
+		// import game vars
+		
+		Object.merge(game, state.gameVars);
+		
+		// import players
+		
+		state.players.each(function (player) {
+			var player = AbstractFactory.create(player.country, [game.players.length, player.color]);
+			Object.merge(player, player.properties);
+			game.players.push(player);
+		});
+		
+		// import pieces
+		
+		state.board.pieces.each(function (piece) {
+			var pieceObj = AbstractFactory.create(piece.pieceType, [piece.x, piece.y, piece.side]);
+			Object.merge(pieceObj, piece.props);
+			$(pieceObj).inject('pieces');
+		});
+		
+		state.graveyard.each(function (piece) {
+			var pieceObj = AbstractFactory.create(piece.pieceType, [piece.x, piece.y, piece.side]);
+			Object.merge(pieceObj, piece.props);
+			$(pieceObj).inject('graveyard');
+		});
+		
+		// import moves list
+		
+		$('moves').innerHTML = unescape(state.moves);
+		this.currentTurn = $$('#moves tr').getLast();
+		
+		// run any special import events
+		
+		game.players.each(function (player) {
+			player.afterImport();
+		})
+		
+		// kind of like calling startGame(), but without starting a new turn
+		this.clearStatus();
+		this.movable = true;
+		if ($('setup')) { $('setup').dispose(); }
+		$('moves').show();
+		this.getCurrentPlayer().startTurn();
 	}
 });
 
@@ -579,6 +656,23 @@ var Player = new Class({
      */
     capturable: function(myPiece, capturingPiece) {
     	return true; // override this method
+    },
+    
+    export: function() {
+    	return {
+    		country: this.countryName,
+		    color: this.color,
+		    properties: {
+			    check: this.check,
+			    inGame: this.inGame,
+			    promotionPieces: this.promotionPieces,
+			    lastMoveType: this.lastMoveType
+    		}
+    	}
+    },
+    
+    afterImport: function() {
+    	return; // override this method
     }
 });
 
@@ -926,6 +1020,8 @@ var Square = new Class({
 var Piece = new Class({
     x: 0,
     y: 0, // position of the piece on the board, from (1,1) at bottom-left to (8,8)
+    
+    pieceClass: '', // class name of the piece
     pieceName: '', // base name of the piece 
     pieceChar: '', // the piece's character representation in algebraic notation
     side: null, // the order of this piece's owner
@@ -1246,7 +1342,19 @@ var Piece = new Class({
     	
     	var newPiece = AbstractFactory.create(pieceName, [this.x, this.y, this.side]);
     	$(newPiece).inject('pieces');
-    	newPiece.properties = this.properties;
+    	newPiece.specialProperties = this.specialProperties;
     	return newPiece;
     },
+    
+    export: function() {
+    	return {
+    		x: this.x,
+    		y: this.y,
+    		pieceType: this.pieceClass,
+    		side: this.side,
+    		props: {
+    			specialProperties: Object.clone(this.specialProperties)
+    		}
+    	};
+    }
 });

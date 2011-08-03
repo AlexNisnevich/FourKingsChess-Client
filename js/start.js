@@ -29,8 +29,13 @@ $('startButton').addEvent('click', function() {
 			game.addPlayer($('selectYellow').getSelected()[0].value, 'yellow');
 			game.addPlayer($('selectBlue').getSelected()[0].value, 'blue');
 			game.startGame();
-			
-			$('setup').dispose();
-			$('moves').show();
 	}
+});
+
+$('importButton').addEvent('click', function() {
+	game.import($('gameState').value);
+});
+
+$('exportButton').addEvent('click', function() {
+	$('gameState').innerHTML = JSON.stringify(game.export());
 });

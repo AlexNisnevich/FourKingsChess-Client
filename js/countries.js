@@ -103,6 +103,14 @@ var Jerusalem = new Class({
 	
 	capturable: function (myPiece, capturingPiece) {
 		return (!myPiece.specialProperties.castle || capturingPiece.isRoyal());
+	},
+	
+	afterImport: function() {
+		$$('#board .piece.' + this.color).each(function (piece) {
+			if (piece.object.specialProperties.castle) {
+				piece.addClass('castle');
+			}
+		});
 	}
 });
 
@@ -151,6 +159,5 @@ var Sparta = new Class({
 	                            ['Knight', 0]];
 	}
 	
-	//@TODO: You are checkmated only when your king is captured twice. The first time that your king 
-	//is captured, place it anywhere in your 3x5 area at the start of your next turn.
+	//@TODO: Once per game, while in check, you may move your king and warrior on the same turn.
 });
