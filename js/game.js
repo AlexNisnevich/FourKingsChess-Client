@@ -200,7 +200,7 @@ var Game = new Class({
      * Displays an alert with the given text
      */
     alert: function(txt) {
-		$('alert').innerText = txt;
+		$('alert').innerHTML = txt;
 	},
 	
 	/*
@@ -216,7 +216,7 @@ var Game = new Class({
 	 * Prompts a player to select something
 	 */
 	prompt: function(txt, selectType, buttonType, selector, onAvailable, onSelect, onConfirm, onCancel, onEnd) {
-		$('alert').innerText = txt;
+		$('alert').innerHTML = txt;
 		
 		switch (buttonType) {
 		case 'confirmCancel':
@@ -520,7 +520,7 @@ var Player = new Class({
     	
     	// Update "to move"
     	var toMove = $('toMove');
-    	toMove.innerText = this.color.capitalize() + ' to move.';
+    	toMove.innerHTML = this.color.capitalize() + ' to move.';
     	toMove.erase("class");
     	toMove.addClass(this.color);
     },
