@@ -12,17 +12,17 @@
 	<div id="gameContainer">
 		<div id="boardContainer">
 			<div id="board">
-			    <div id="squares"></div>
-			    <div id="pieces"></div>
+				<div id="squares"></div>
+				<div id="pieces"></div>
 			</div>
-		    <div id="graveyard">
-		    	<label>Captured Pieces</label>
-		    </div>
-		    <div id="importExport">
-		    	<textarea id="gameState"></textarea>
-		    	<button id="importButton">Import</button>
-		    	<button id="exportButton">Export</button>
-		    </div>
+			<div id="graveyard">
+			    <label>Captured Pieces</label>
+			</div>
+			<div id="importExport" style="visibility: hidden;">
+			    <textarea id="gameState"></textarea>
+			    <button id="importButton">Import</button>
+			    <button id="exportButton">Export</button>
+			</div>
 		</div>
 		<div id="sidebar">
 			<div id="movesBox">
@@ -43,6 +43,7 @@
 						<td class="move heading blue"></td>
 					</tr>
 				</table>
+	            <div id="outcome"></div>
 			</div>
 			<div id="statusBox">
 				<label>Status</label>
@@ -53,10 +54,10 @@
 			</div>
 		</div>
 	</div>
-	
+
 	<div id="overlay">
-        <div id="dialog"></div>
-    </div>
+	    <div id="dialog"></div>
+	</div>
 
 	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/mootools/1.3.2/mootools-yui-compressed.js"></script>
 	<script type="text/javascript" src="js/moo/mootools-more-1.3.2.1.js"></script>
@@ -64,7 +65,7 @@
 	<script type="text/javascript" src="js/countries.js"></script>
 	<script type="text/javascript" src="js/pieces.js"></script>
 	<script type="text/javascript" src="js/start.js"></script>
-	
+
 	</script>
 </body>
 </html>

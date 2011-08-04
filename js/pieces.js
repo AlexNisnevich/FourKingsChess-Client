@@ -15,7 +15,7 @@ var Pawn = new Class({
 	
 	setImage: function() {
         this.element.addClass(this.color);
-        this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png');
+        this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png');
     },
     
     canMove: function(square) {
@@ -260,7 +260,7 @@ var MongolPawn =  new Class({
 	
 	setImage: function() {
         this.element.addClass(this.color);
-        this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
+        this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
     }
 });
 

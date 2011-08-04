@@ -52,8 +52,8 @@ var Hurons = new Class({
 		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
 	    this.promotionPieces = [['HuronRook', 0], 
 	                            ['HuronBishop', 0]];
-	    this.derivedPieces = [['HuronBishop', 'Bishop'],
-	                          ['HuronRook', 'Rook']];
+	    this.derivedPieces = [['Bishop', 'HuronBishop'],
+	                          ['Rook', 'HuronRook']];
 	}
 });
 

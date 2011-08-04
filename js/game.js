@@ -127,6 +127,8 @@ var Game = new Class({
 		
 		$('setup').dispose();
 		$('moves').show();
+
+        this.publishGameState();
 	},
 	
 	// turns and players
@@ -176,13 +178,25 @@ var Game = new Class({
      * Moves play to the next player and starts their turn
      */
 	nextPlayer: function() {
-    	if (this.currentPlayer == this.players.length - 1) {
+    	// advance player count
+        if (this.currentPlayer == this.players.length - 1) {
     		this.nextTurn();
     		this.currentPlayer = 0;
     	} else {
     		this.currentPlayer++;
     	}
-    	
+
+        // save and display last move
+        this.lastMove = new Array(
+            new Array(this.lastPieceMoved.x, this.lastPieceMoved.y),
+            new Array(this.lastPieceMoved.lastPosition.x, this.lastPieceMoved.lastPosition.y)
+        );
+        this.displayLastMove(this.lastMove);
+
+        // post new gamestate to server
+        this.publishGameState();
+
+    	// start next player's turn
 		this.playerStart();
 	},
     
@@ -227,6 +241,7 @@ var Game = new Class({
 			$('confirmButton').addEvent('click', function () {
 				if (game.selection) {
 					onConfirm(game.selection);
+                    game.selection = null;
 					game.clearStatus();
 				}
 			});
@@ -234,6 +249,7 @@ var Game = new Class({
 			$('cancelButton').show()
 			$('cancelButton').addEvent('click', function () {
 				onCancel();
+                game.selection = null;
 				game.clearStatus();
 			});
 		}
@@ -323,10 +339,10 @@ var Game = new Class({
 		
 		this.clearStatus(); // first, clear existing alert
 		
-		if (this.getOtherPlayers(cp.order).every(function (player) {
-			return ($$('#board .royal.' + player.color).length == 0)
-		})) {
-			game.gameOver(cp);
+		if (this.players.filter(function (player) {
+			return ($$('#board .royal.' + player.color).length != 0)
+		}).length == 1) {
+			game.gameOver($$('#board .royal')[0].object.getOwner());
 			suffix = '##';
 		} else {
 			this.getOtherPlayers(cp.order).each(function(player) {			
@@ -362,10 +378,16 @@ var Game = new Class({
 			piece.object.drag.detach();
 		});
 		
-		var outcomeText = winner.color.capitalize() + ' wins.';
-		var outcome = new Element('div.outcome');
-		outcome.appendText(outcomeText);
-		setTimeout(function () {outcome.inject('sidebar')}, 100);
+		var outcomeText = winner.countryName + ' wins.';
+
+		var outcome = $('outcome');
+		outcome.innerHTML = outcomeText;
+        outcome.addClass(winner.color);
+		outcome.show();
+
+        this.alert('Game over.<br>' + outcomeText);
+        $('alert').addClass(winner.color);
+        $('toMove').hide();
 	},
 	
 	// pieces
@@ -406,7 +428,9 @@ var Game = new Class({
 		}).getLast();
 	},
 
-	// misc GUI
+    //
+	// MISC GUI
+    //
 
 	/*
 	 * Hides any currently open dialog
@@ -415,9 +439,13 @@ var Game = new Class({
 	    $('dialog').clear();
 	    $('overlay').hide();
 	},
+
+    //
+    // COMMUNICATION
+    //
 	
 	export: function() {
-		return {
+		var exportedGame = {
 			gameVars: {
 				currentPlayer: this.currentPlayer,
 				turnNum: this.turnNum
@@ -433,8 +461,25 @@ var Game = new Class({
 			graveyard: $$('#graveyard .piece').map(function(piece) {
 				return piece.object.export();
 			}),
-			moves: escape($('moves').innerHTML)
+			moves: $$('#moves tr').map(function (turn) {
+                return turn.getChildren().map(function (move) {
+                    return {
+                        text: move.innerText.replace('+', 'plus'),
+                        class: move.getAttribute('class')
+                    };
+                });
+            })
 		};
+
+        if (this.lastPieceMoved) {
+            var piece = this.lastPieceMoved;
+            exportedGame.lastMove = new Array(
+                new Array(piece.x, piece.y),
+                new Array(piece.lastPosition.x, piece.lastPosition.y)
+            );
+        }
+
+        return exportedGame;
 	},
 	
 	import: function(gameState) {
@@ -462,20 +507,41 @@ var Game = new Class({
 		state.board.pieces.each(function (piece) {
 			var pieceObj = AbstractFactory.create(piece.pieceType, [piece.x, piece.y, piece.side]);
 			Object.merge(pieceObj, piece.props);
+			pieceObj.refresh();
+			pieceObj.setImage();
 			$(pieceObj).inject('pieces');
 		});
 		
 		state.graveyard.each(function (piece) {
 			var pieceObj = AbstractFactory.create(piece.pieceType, [piece.x, piece.y, piece.side]);
 			Object.merge(pieceObj, piece.props);
+			pieceObj.refresh();
+			pieceObj.setImage();
 			$(pieceObj).inject('graveyard');
 		});
 		
 		// import moves list
 		
-		$('moves').innerHTML = unescape(state.moves);
+        $('moves').innerHTML = '';
+
+        state.moves.each(function (turn) {
+            var tr = new Element('tr');
+            turn.each(function (move) {
+                var td = new Element('td', {
+                    text: move.text.replace('plus', '+'),
+                    'class': move.class
+                });
+                $(td).inject($(tr));
+            });
+            $(tr).inject($('moves'));
+        });
+
 		this.currentTurn = $$('#moves tr').getLast();
 		
+        // display last move
+
+        this.displayLastMove(state.lastMove);
+
 		// run any special import events
 		
 		game.players.each(function (player) {
@@ -488,7 +554,50 @@ var Game = new Class({
 		if ($('setup')) { $('setup').dispose(); }
 		$('moves').show();
 		this.getCurrentPlayer().startTurn();
-	}
+
+        if ( this.checkChecks() == '#') {
+            // bit of a bug with "X has been defeated" persisting, so let's manually clear that for now
+            this.clearStatus();
+        }
+	},
+
+    publishGameState: function() {
+        new Request.HTML({
+            url: baseUrl + 'Game/SaveState/'
+        }).post('id=' + gameId 
+            + '&state=' + JSON.stringify(this.export())
+            + '&turn=' + (this.turnNum * 4 + this.currentPlayer));
+    },
+
+    pollGameState: function() {
+        var game = this;
+
+        var pollRequest = new Request({
+            url: baseUrl + 'Game/PollState/',
+            data: 'id=' + gameId 
+                + '&turn=' + (this.turnNum * 4 + this.currentPlayer),
+            onSuccess: function (txt) {
+                if (txt != "") {
+                    game.import(txt);
+                }
+            }
+        });
+
+        pollRequest.send();
+    },
+
+    displayLastMove: function(lastMove) {
+        if (lastMove) {
+            $$('#board .square').each(function (square) {
+                if ((square.object.x == lastMove[0][0] && square.object.y == lastMove[0][1]) ||
+                    (square.object.x == lastMove[1][0] && square.object.y == lastMove[1][1])) {
+                        square.addClass('hoverYellow');
+                } else {
+                    square.removeClass('hoverYellow');
+                }
+            });
+        }
+    }
 });
 
 var Player = new Class({
@@ -559,6 +668,8 @@ var Player = new Class({
      * Called when this player is defeated
      */
     defeated: function(defeatingPlayer) {
+        var currentPlayer = this;
+
     	// status
     	
     	this.inGame = false;
@@ -571,7 +682,15 @@ var Player = new Class({
     	
     	// merge promotionPieces
     	
-    	var newPromotionPieces = this.promotionPieces.filter(function (promotionPiece) {
+    	var newPromotionPieces = this.promotionPieces.map(function (promotionPiece) {
+            // replace derived pieces with base pieces
+            currentPlayer.derivedPieces.each(function (derivedPiece) {
+                if (derivedPiece[1] == promotionPiece[0]) {
+                    promotionPiece[0] = derivedPiece[0];
+                }
+            });
+            return promotionPiece;
+        }).filter(function (promotionPiece) {
     		return !defeatingPlayer.promotionPieces.some(function (existingPiece) {
     			return existingPiece[0] == promotionPiece[0]; // not already in promotionPieces
     		}) && !defeatingPlayer.derivedPieces.some(function (derivedPiece) {
@@ -593,11 +712,12 @@ var Player = new Class({
     	if (!this.inGame) {
      		game.displayMove('--');
        		game.nextPlayer();
+            return;
     	}
     	
     	// Update "to move"
     	var toMove = $('toMove');
-    	toMove.innerHTML = this.color.capitalize() + ' to move.';
+    	toMove.innerHTML = this.countryName + ' to move.';
     	toMove.erase("class");
     	toMove.addClass(this.color);
     },
@@ -1081,7 +1201,7 @@ var Piece = new Class({
      */
     setImage: function() {
         this.element.addClass(this.color);
-        this.element.setProperty('src', 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
+        this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
     },
     
     /*
@@ -1347,14 +1467,18 @@ var Piece = new Class({
     },
     
     export: function() {
-    	return {
+    	var pieceExport = {
     		x: this.x,
     		y: this.y,
     		pieceType: this.pieceClass,
     		side: this.side,
-    		props: {
-    			specialProperties: Object.clone(this.specialProperties)
-    		}
+    		props: {}
     	};
+    	
+    	if (Object.getLength(Object.clone(this.specialProperties)) > 0) {
+    		pieceExport.props.specialProperties = Object.clone(this.specialProperties);
+    	}
+    	
+    	return pieceExport;
     }
 });

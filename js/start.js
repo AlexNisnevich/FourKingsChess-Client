@@ -1,3 +1,6 @@
+var baseUrl = 'http://alex.nisnevich.com/playchess/';
+var gameId = -1; // placeholder
+
 var game = new Game();
 game.setup();
 game.alert('Choose countries');
@@ -32,10 +35,12 @@ $('startButton').addEvent('click', function() {
 	}
 });
 
-$('importButton').addEvent('click', function() {
+/* $('importButton').addEvent('click', function() {
 	game.import($('gameState').value);
 });
 
 $('exportButton').addEvent('click', function() {
 	$('gameState').innerHTML = JSON.stringify(game.export());
-});
+}); */
+
+setInterval(function () { game.pollGameState(); }, 2500);
