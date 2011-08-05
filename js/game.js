@@ -285,14 +285,14 @@ var Game = new Class({
 		switch (selectType) {
 		case 'piece':
 			onAvailable = function (piece) {
-				piece.object.getSquare().element.addClass('hoverBlue')
+				piece.object.getSquare().element.addClass('hoverAvailable')
 			};
 			onSelect = function (piece) {
-				$$('#board .square').removeClass('hoverGreen');
-				piece.object.getSquare().element.addClass('hoverGreen');
+				$$('#board .square').removeClass('hoverValid');
+				piece.object.getSquare().element.addClass('hoverValid');
 			};
 			onEnd = function () {
-				$$('#board .square').removeClass('hoverBlue').removeClass('hoverGreen');
+				$$('#board .square').removeClass('hoverAvailable').removeClass('hoverValid');
 				game.getCurrentPlayer().endTurn();
 			};
 			break;
@@ -334,6 +334,7 @@ var Game = new Class({
 		var game = this;
 		var cp = this.getCurrentPlayer();
 		var suffix = '';
+        var checked = [];
 		
 		cp.check = false;
 		
@@ -345,7 +346,7 @@ var Game = new Class({
 			game.gameOver($$('#board .royal')[0].object.getOwner());
 			suffix = '##';
 		} else {
-			this.getOtherPlayers(cp.order).each(function(player) {			
+			this.players.each(function(player) {			
 				var defeated = ($$('#board .royal.' + player.color).length == 0);
 				var check = $$('#board .royal.' + player.color).every(function (royalPiece) { return royalPiece.object.inCheck(); });
 				
@@ -355,7 +356,7 @@ var Game = new Class({
 						suffix = '#';
 					}
 				} else if (check) {
-					game.alert('Check!'); // alert displays continually, but '+' is shown only 
+					checked.push(player); // alert displays continually, but '+' is shown only 
 										  // the first time a player is checked (until his next turn)
 					if (!player.check) {
 						player.check = true;
@@ -364,6 +365,15 @@ var Game = new Class({
 				}
 			});
 		}
+
+        if (checked.length > 0) {
+            var checkAlert = 'Check on';
+            checked.each(function (player) {
+                checkAlert += ' <span class="' + player.color + '">' + player.countryName + '</span>,';
+            });
+            checkAlert = checkAlert.substring(0, checkAlert.length-1) + '!'; // (removing last comma)
+            this.alert(checkAlert);
+        }
 		
 		return suffix;
 	},
@@ -406,6 +416,13 @@ var Game = new Class({
     	
     	game.getLastMoveText().appendText('=' + choice.pieceChar);
     	this.hideDialog();
+
+        this.publishGameState();
+        // @TODO: Delay publication of game state on move, rather than publishing it twice
+        // like we're doing here. Unfortunately, it might be tricky to delay publication in the
+        // case that the game is awaiting dual inputs (i.e. waiting for power input and promotion
+        // input). Need to find an elegant solution for this. For now, just do this stupid
+        // thing.
 	},
 
 	// moves
@@ -497,9 +514,9 @@ var Game = new Class({
 		// import players
 		
 		state.players.each(function (player) {
-			var player = AbstractFactory.create(player.country, [game.players.length, player.color]);
-			Object.merge(player, player.properties);
-			game.players.push(player);
+			var playerObj = AbstractFactory.create(player.country, [game.players.length, player.color]);
+			Object.merge(playerObj, player.properties);
+			game.players.push(playerObj);
 		});
 		
 		// import pieces
@@ -517,6 +534,7 @@ var Game = new Class({
 			Object.merge(pieceObj, piece.props);
 			pieceObj.refresh();
 			pieceObj.setImage();
+            pieceObj.drag.detach();
 			$(pieceObj).inject('graveyard');
 		});
 		
@@ -554,11 +572,8 @@ var Game = new Class({
 		if ($('setup')) { $('setup').dispose(); }
 		$('moves').show();
 		this.getCurrentPlayer().startTurn();
-
-        if ( this.checkChecks() == '#') {
-            // bit of a bug with "X has been defeated" persisting, so let's manually clear that for now
-            this.clearStatus();
-        }
+        
+        this.checkChecks();
 	},
 
     publishGameState: function() {
@@ -591,9 +606,9 @@ var Game = new Class({
             $$('#board .square').each(function (square) {
                 if ((square.object.x == lastMove[0][0] && square.object.y == lastMove[0][1]) ||
                     (square.object.x == lastMove[1][0] && square.object.y == lastMove[1][1])) {
-                        square.addClass('hoverYellow');
+                        square.addClass('hoverLast');
                 } else {
-                    square.removeClass('hoverYellow');
+                    square.removeClass('hoverLast');
                 }
             });
         }
@@ -606,6 +621,7 @@ var Player = new Class({
 
     check: false, // is the player currently in check?
     inGame: true, // is the player currently in the game?
+    justDefeated: false, // was the player defeated within the last turn?
     
     setupPieces: [], // starting setup: 2-dimensional array, where the first row is the bottom row, etc.
     promotionPieces: [], // stores pieces that the player's pawns can promote to, and the number that can
@@ -672,7 +688,7 @@ var Player = new Class({
 
     	// status
     	
-    	this.inGame = false;
+    	this.justDefeated = true;
     	
     	// transfer possession
     	
@@ -701,13 +717,19 @@ var Player = new Class({
     	
     	// alert
     	
-    	game.alert(this.color.capitalize() + ' has been defeated.');
+    	game.alert('<span class="' + this.color + '">' + this.countryName + '</span> has been defeated.');
     },
     
     /*
      * Starts the player's turn.
      */
     startTurn: function() {
+        // If just defeated, no longer in game
+        if (this.justDefeated) {
+            this.inGame = false;
+            this.justDefeated = false;
+        }
+
     	// Skip turn if not in game
     	if (!this.inGame) {
      		game.displayMove('--');
@@ -785,6 +807,7 @@ var Player = new Class({
 		    properties: {
 			    check: this.check,
 			    inGame: this.inGame,
+                justDefeated: this.justDefeated,
 			    promotionPieces: this.promotionPieces,
 			    lastMoveType: this.lastMoveType
     		}
@@ -1221,13 +1244,14 @@ var Piece = new Class({
     	        draggable.addClass('grabbing');
     	        
     	        var piece = draggable.object;
+                piece.getSquare().element.addClass('hoverCurrent');
     	        
     	        $$('.square').each(function (droppable) {
     	        	var square = droppable.object;
     	        	
     	        	if (piece.canMove(square) 
     	        			&& (!square.isOccupied() || piece.canCapture(square.getPiece()))) {
-    	        		droppable.addClass('hoverBlue');
+    	        		droppable.addClass('hoverAvailable');
     	        	}
     	        })
     	    },
@@ -1238,7 +1262,7 @@ var Piece = new Class({
     				return false;
     			}
     	    	
-    	        $$('.square').removeClass('hoverGreen').removeClass('hoverRed');
+    	        $$('.square').removeClass('hoverValid').removeClass('hoverInvalid');
     	
     	        var piece = draggable.object;
     	
@@ -1246,9 +1270,9 @@ var Piece = new Class({
     	        	if (piece.side == game.currentPlayer 
     	            		&& piece.canMove(droppable.object)
     	            		&& (!droppable.object.isOccupied() || piece.canCapture(droppable.object.getPiece()))) {
-    	                droppable.addClass('hoverGreen');
+    	                droppable.addClass('hoverValid');
     	            } else {
-    	                droppable.addClass('hoverRed');
+    	                droppable.addClass('hoverInvalid');
     	            }
     	        }
     	    },
@@ -1260,10 +1284,11 @@ var Piece = new Class({
     				return false;
     			}
     	    	
-    	        $$('.square').removeClass('hoverGreen').removeClass('hoverRed').removeClass('hoverBlue');
+    	        $$('.square').removeClass('hoverValid').removeClass('hoverInvalid').removeClass('hoverAvailable');
     	        draggable.removeClass('grabbing');
     	
     	        var piece = draggable.object;
+                piece.getSquare().element.removeClass('hoverCurrent');
     	
     	        if (droppable 
     	        		&& piece.side == game.currentPlayer 
@@ -1404,7 +1429,6 @@ var Piece = new Class({
     capture: function(piece) {
     	this.lastCapture = piece;
         piece.captured();
-        piece.element.inject('graveyard');
     },
     
     /*
@@ -1412,6 +1436,7 @@ var Piece = new Class({
      */
     captured: function() {
     	this.drag.detach();
+        this.element.inject('graveyard');
     },
     
     //

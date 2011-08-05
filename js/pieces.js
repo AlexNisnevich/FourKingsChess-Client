@@ -19,16 +19,9 @@ var Pawn = new Class({
     },
     
     canMove: function(square) {
-    	if (this.getSquare().isPawnMove(square, this.direction) || 
-    			this.getSquare().isPawnCapture(square, this.direction, this.side)) {
-    		this.moveType = 'normal';
-    	} else if (this.getSquare().isPawnDoubleMove(square, this.direction, this.side)) {
-    		this.moveType = 'double';
-    	} else {
-    		return false;
-    	}
-    	
-    	return true;
+    	return (this.getSquare().isPawnMove(square, this.direction) || 
+    			this.getSquare().isPawnCapture(square, this.direction, this.side) ||
+    			this.getSquare().isPawnDoubleMove(square, this.direction, this.side));
     },
 
 	afterMove: function() {
@@ -211,6 +204,20 @@ var AthensBishop = new Class({
 	}
 });
 
+var GreeceKnight = new Class({
+    Extends: Knight,
+
+    pieceClass: 'GreeceKnight',
+
+    canMove: function (square) {
+        if (this.getSquare().inTwoByFour() == this.side) {
+            return this.parent(square) || this.getSquare().isKingMove(square, this.side);
+        } else {
+            return this.parent(square);
+        }
+    }
+});
+
 var HuronBishop = new Class({
 	Extends: Bishop,
 
@@ -233,6 +240,73 @@ var HuronRook = new Class({
     }
 });
 
+var HuronKing = new Class({
+    Extends: King,
+
+    pieceClass: 'HuronKing',
+
+    canMove: function (square) {
+        return (this.parent(square) || this.isKingJumpMove(this.getSquare(), square, this.side));
+    },
+
+    isKingJumpMove: function (start, dest, side) {
+        return !dest.isOccupied(side) &&
+		(((new Square(start.x + 1, start.y).isOccupied()) && (dest.x == (start.x + 2)) && dest.y == start.y)
+		|| ((new Square(start.x - 1, start.y).isOccupied()) && (dest.x == (start.x - 2)) && dest.y == start.y)
+		|| ((new Square(start.x, start.y + 1).isOccupied()) && (dest.x == (start.x)) && (dest.y == start.y + 2))
+		|| ((new Square(start.x, start.y - 1).isOccupied()) && (dest.x == (start.x)) && (dest.y == start.y - 2))
+		|| ((new Square(start.x + 1, start.y + 1).isOccupied()) && (dest.x == (start.x + 2)) && (dest.y == start.y + 2))
+		|| ((new Square(start.x - 1, start.y + 1).isOccupied()) && (dest.x == (start.x - 2)) && (dest.y == start.y + 2))
+		|| ((new Square(start.x - 1, start.y - 1).isOccupied()) && (dest.x == (start.x - 2)) && (dest.y == start.y - 2))
+		|| ((new Square(start.x + 1, start.y - 1).isOccupied()) && (dest.x == (start.x + 2)) && (dest.y == start.y - 2)));
+    }
+});
+
+var HuronPawn = new Class({
+    Extends: Pawn,
+
+    pieceClass: 'HuronPawn',
+
+    canMove: function (square) {
+        return (this.parent(square) ||
+	            this.isPawnJumpMove(this.getSquare(), square, this.direction) ||
+	            this.isPawnJumpCapture(this.getSquare(), square, this.direction, this.side));
+    },
+
+    isPawnJumpMove: function (start, dest, dir) {
+        switch (dir) {
+            case 0:
+                return (!dest.isOccupied() && (new Square(start.x, start.y + 1).isOccupied()) && dest.x == start.x && dest.y == start.y + 2);
+            case 1:
+                return (!dest.isOccupied() && (new Square(start.x + 1, start.y).isOccupied()) && dest.y == start.y && dest.x == start.x + 2);
+            case 2:
+                return (!dest.isOccupied() && (new Square(start.x, start.y - 1).isOccupied()) && dest.x == start.x && dest.y == start.y - 2);
+            case 3:
+                return (!dest.isOccupied() && (new Square(start.x - 1, start.y).isOccupied()) && dest.y == start.y && dest.x == start.x - 2);
+        }
+    },
+
+    isPawnJumpCapture: function (start, dest, dir, side) {
+        if (dest.isOccupied() && !dest.isOccupied(side)) {
+            switch (dir) {
+                case 0:
+                    return (((new Square(start.x + 1, start.y + 1).isOccupied() && dest.x == start.x + 2) ||
+                         (new Square(start.x - 1, start.y + 1).isOccupied() && dest.x == start.x - 2)) && dest.y == start.y + 2);
+                case 1:
+                    return (((new Square(start.x + 1, start.y + 1).isOccupied() && dest.y == start.y + 2) ||
+                         (new Square(start.x + 1, start.y - 1).isOccupied() && dest.y == start.y - 2)) && dest.x == start.x + 2);
+                case 2:
+                    return (((new Square(start.x + 1, start.y - 1).isOccupied() && dest.x == start.x + 2) ||
+                         (new Square(start.x - 1, start.y - 1).isOccupied() && dest.x == start.x - 2)) && dest.y == start.y - 2);
+                case 3:
+                    return (((new Square(start.x - 1, start.y - 1).isOccupied() && dest.y == start.y + 2) ||
+                         (new Square(start.x - 1, start.y - 1).isOccupied() && dest.y == start.y - 2)) && dest.x == start.x - 2);
+            }
+        } else {
+            return false;
+        }
+    }
+});
 
 var MongolPawn =  new Class({
 	Extends: Pawn,

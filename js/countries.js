@@ -14,6 +14,22 @@ var DefaultCountry = new Class({
 	}
 });
 
+var AncientGreece = new Class({
+    Extends: Player,
+
+    countryName: 'AncientGreece',
+
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.setupPieces = [['King', 'Rook', 'Bishop', 'GreeceKnight'],
+                            ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+        this.promotionPieces = [['Rook', 0],
+                                ['Bishop', 0],
+                                ['Knight', 0]];
+        this.derivedPieces = [['Knight', 'GreeceKnight']];
+    }
+});
+
 var Athens = new Class({
 	Extends: Player,
 	
@@ -42,19 +58,20 @@ var Britain = new Class({
 });
 
 var Hurons = new Class({
-	Extends: Player,
+    Extends: Player,
 
-	countryName: 'Hurons',
+    countryName: 'Hurons',
 
-	initialize: function (order, color) {
-		this.parent(order, color);
-		this.setupPieces = [['King', 'HuronRook', 'HuronBishop', 'HuronBishop'], 
-		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
-	    this.promotionPieces = [['HuronRook', 0], 
+    initialize: function(order, color) {
+        this.parent(order, color);
+        this.setupPieces = [['HuronKing', 'HuronRook', 'HuronBishop', 'HuronBishop'],
+		                    ['HuronPawn', 'HuronPawn', 'HuronPawn', 'HuronPawn']];
+        this.promotionPieces = [['HuronRook', 0],
 	                            ['HuronBishop', 0]];
-	    this.derivedPieces = [['Bishop', 'HuronBishop'],
-	                          ['Rook', 'HuronRook']];
-	}
+        this.derivedPieces = [['Bishop', 'HuronBishop'],
+	                          ['Rook', 'HuronRook'],
+							  ['Pawn', 'HuronPawn']];
+    }
 });
 
 var Jerusalem = new Class({
