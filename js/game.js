@@ -1085,10 +1085,18 @@ var Square = new Class({
     /*
      * @params: dest = destination Square
      * 			side = order of the given piece's owner
+     *			limit = (optional) maximum number of squares moved
      * @returns whether there is a valid diagonal move from here to dest
      */
-    isBishopMove: function(dest, side) {
-        return ((dest.y - dest.x == this.y - this.x && !this.isLineOccupied(dest, 'diagonalUp', side)) || (dest.x + dest.y == this.x + this.y && !this.isLineOccupied(dest, 'diagonalDown', side)));
+    isBishopMove: function(dest, side, limit) {
+    	if (limit) {
+    		return ((dest.y - dest.x == this.y - this.x && !this.isLineOccupied(dest, 'diagonalUp', side)) || 
+    				(dest.x + dest.y == this.x + this.y && !this.isLineOccupied(dest, 'diagonalDown', side))) &&
+    				this.distance(dest) <= (2 * limit); // * 2 because diagonal moves are counted twice for distance
+    	} else {
+    		return ((dest.y - dest.x == this.y - this.x && !this.isLineOccupied(dest, 'diagonalUp', side)) || 
+    				(dest.x + dest.y == this.x + this.y && !this.isLineOccupied(dest, 'diagonalDown', side)));
+    	}
     },
     
     /*
@@ -1110,10 +1118,18 @@ var Square = new Class({
     /*
      * @params: dest = destination Square
      * 			side = order of the given piece's owner
+     * 			limit = (optional) maximum number of squares moved
      * @returns whether there is a valid lateral move from here to dest
      */
-    isRookMove: function(dest, side) {
-        return ((dest.y == this.y && !this.isLineOccupied(dest, 'horizontal', side)) || (dest.x == this.x && !this.isLineOccupied(dest, 'vertical', side)));
+    isRookMove: function(dest, side, limit) {
+    	if (limit) {
+	        return ((dest.y == this.y && !this.isLineOccupied(dest, 'horizontal', side)) || 
+	        		(dest.x == this.x && !this.isLineOccupied(dest, 'vertical', side))) &&
+	        		this.distance(dest) <= limit;
+    	} else {
+    		return (dest.y == this.y && !this.isLineOccupied(dest, 'horizontal', side)) || 
+	        	   (dest.x == this.x && !this.isLineOccupied(dest, 'vertical', side));
+    	}
     },
     
     /*
