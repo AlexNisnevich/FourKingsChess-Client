@@ -5,7 +5,7 @@ var game = new Game();
 game.setup();
 game.alert('Choose countries');
 
-var countries = ['Athens', 'Britain', 'Hurons', 'Jerusalem', 'Mongols', 'PapalStates', 'Sparta'];
+var countries = ['AncientGreece', 'Athens', 'Britain', 'Hurons', 'Jerusalem', 'Mongols', 'PapalStates', 'Sparta'];
 
 $$('#setup select').each(function(dropdown) {
 	var blankOption = new Element('option', {

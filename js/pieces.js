@@ -210,10 +210,111 @@ var GreeceKnight = new Class({
     pieceClass: 'GreeceKnight',
 
     canMove: function (square) {
+        this.moveType = 'normal';
         if (this.getSquare().inTwoByFour() == this.side) {
             return this.parent(square) || this.getSquare().isKingMove(square, this.side);
-        } else {
+        }
+        else if (this.getSquare().inThreeByFive() == this.side) {
+            return this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2);
+        }
+        else if (this.getSquare().inCenterTwoByTwo() == true) {
+            if (this.parent(square)) {
+                return true;
+            } else if (this.getSquare().isRookJump(square, this.side, 1)
+                    && square.isOccupied()
+                    && !square.isOccupied(this.side)) {
+                this.moveType = 'shoot';
+                return true;
+            } else {
+                return false;
+            }
+        }
+        else {
             return this.parent(square);
+        }
+    },
+
+    afterMove: function () {
+        if (this.moveType == 'shoot') {
+            this.moveTo(this.lastPosition, 'normal');
+            game.getLastMoveText().appendText(' (sh)');
+        }
+    }
+});
+
+
+var GreeceBishop = new Class({
+    Extends: Bishop,
+
+    pieceClass: 'GreeceBishop',
+
+    canMove: function (square) {
+        this.moveType = 'normal';
+        if (this.getSquare().inTwoByFour() == this.side) {
+            return this.parent(square) || this.getSquare().isKingMove(square, this.side);
+        }
+        else if (this.getSquare().inThreeByFive() == this.side) {
+            return this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2);
+        }
+        else if (this.getSquare().inCenterTwoByTwo() == true) {
+            if (this.parent(square)) {
+                return true;
+            } else if (this.getSquare().isRookJump(square, this.side, 1)
+                    && square.isOccupied()
+                    && !square.isOccupied(this.side)) {
+                this.moveType = 'shoot';
+                return true;
+            } else {
+                return false;
+            }
+        }
+        else {
+            return this.parent(square);
+        }
+    },
+
+    afterMove: function () {
+        if (this.moveType == 'shoot') {
+            this.moveTo(this.lastPosition, 'normal');
+            game.getLastMoveText().appendText(' (sh)');
+        }
+    }
+});
+
+var GreeceRook = new Class({
+    Extends: Rook,
+
+    pieceClass: 'GreeceRook',
+
+    canMove: function (square) {
+        this.moveType = 'normal';
+        if (this.getSquare().inTwoByFour() == this.side) {
+            return this.parent(square) || this.getSquare().isKingMove(square, this.side);
+        }
+        else if (this.getSquare().inThreeByFive() == this.side) {
+            return this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2);
+        }
+        else if (this.getSquare().inCenterTwoByTwo() == true) {
+            if (this.getSquare().isRookJump(square, this.side, 1)
+                    && square.isOccupied()
+                    && !square.isOccupied(this.side)) {
+                this.moveType = 'shoot';
+                return true;
+            } else if (this.parent(square)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        else {
+            return this.parent(square);
+        }
+    },
+
+    afterMove: function () {
+        if (this.moveType == 'shoot') {
+            this.moveTo(this.lastPosition, 'normal');
+            game.getLastMoveText().appendText(' (sh)');
         }
     }
 });
