@@ -1191,6 +1191,15 @@ var Square = new Class({
     },
     
     /*
+     * @params: dest = destination Square
+     * 			side = order of the given piece's owner
+     * @returns whether a king could move from here to dest
+     */
+    isKingMove: function(dest, side) {
+        return (!dest.isOccupied(side) && (dest.x == this.x || dest.x == this.x - 1 || dest.x == this.x + 1) && (dest.y == this.y || dest.y == this.y - 1 || dest.y == this.y + 1));
+    },
+    
+    /*
      * @returns the number of the player whose 2x4 starting region this square
      * is in, or -1 if the square is not in a 2x4 starting region
      */
