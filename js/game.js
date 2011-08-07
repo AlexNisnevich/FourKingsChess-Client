@@ -128,8 +128,18 @@ var Game = new Class({
 		$('setup').dispose();
 		$('moves').show();
 
+        this.displayDescriptions();
+
         this.publishGameState();
 	},
+
+    displayDescriptions: function() {
+        this.players.each( function(player) {
+            var description = new Element('div.description');
+            description.innerHTML = '<span class="countryName ' + player.color +'">' + player.countryName + ':</span> ' + player.description;
+            description.inject($('descriptions'));
+        });
+    },
 	
 	// turns and players
 	
@@ -178,7 +188,7 @@ var Game = new Class({
      * Moves play to the next player and starts their turn
      */
 	nextPlayer: function() {
-    	// advance player count
+        // advance player count
         if (this.currentPlayer == this.players.length - 1) {
     		this.nextTurn();
     		this.currentPlayer = 0;
@@ -187,11 +197,13 @@ var Game = new Class({
     	}
 
         // save and display last move
-        this.lastMove = new Array(
-            new Array(this.lastPieceMoved.x, this.lastPieceMoved.y),
-            new Array(this.lastPieceMoved.lastPosition.x, this.lastPieceMoved.lastPosition.y)
-        );
-        this.displayLastMove(this.lastMove);
+        if (this.lastPieceMoved) {
+            this.lastMove = new Array(
+                new Array(this.lastPieceMoved.x, this.lastPieceMoved.y),
+                new Array(this.lastPieceMoved.lastPosition.x, this.lastPieceMoved.lastPosition.y)
+            );
+            this.displayLastMove(this.lastMove);
+        }
 
         // post new gamestate to server
         this.publishGameState();
@@ -383,9 +395,12 @@ var Game = new Class({
 	 * Displays victory status
 	 */
 	gameOver: function(winner) {
-		$$('#board .piece').each(function(piece) {
-			piece.object.transferPossession(winner);
-			piece.object.drag.detach();
+		$$('#board .piece').each(function(pieceEl) {
+            piece = pieceEl.object;
+            if (piece.getOwner() != winner) {
+                piece = piece.transferPossession(winner);
+            }
+			piece.drag.detach();
 		});
 		
 		var outcomeText = winner.countryName + ' wins.';
@@ -461,6 +476,9 @@ var Game = new Class({
     // COMMUNICATION
     //
 	
+    /*
+     * @return JSON object containing current game state
+     */
 	export: function() {
 		var exportedGame = {
 			gameVars: {
@@ -499,6 +517,10 @@ var Game = new Class({
         return exportedGame;
 	},
 	
+    /*
+     * @params gameState: JSON object containing game state
+     * Imports game from JSON
+     */
 	import: function(gameState) {
 		var game = this;
 		var state = JSON.parse(gameState);
@@ -572,10 +594,14 @@ var Game = new Class({
 		if ($('setup')) { $('setup').dispose(); }
 		$('moves').show();
 		this.getCurrentPlayer().startTurn();
+        this.displayDescriptions();
         
         this.checkChecks();
 	},
 
+    /*
+     * Publishes game state to server
+     */
     publishGameState: function() {
         new Request.HTML({
             url: baseUrl + 'Game/SaveState/'
@@ -584,6 +610,9 @@ var Game = new Class({
             + '&turn=' + (this.turnNum * 4 + this.currentPlayer));
     },
 
+    /*
+     * Polls server for new game state. If there is a new game state, imports it.
+     */
     pollGameState: function() {
         var game = this;
 
@@ -601,6 +630,10 @@ var Game = new Class({
         pollRequest.send();
     },
 
+    /*
+     * @params lastMove: array as created in Game.export()
+     * Highlights the last move made
+     */
     displayLastMove: function(lastMove) {
         if (lastMove) {
             $$('#board .square').each(function (square) {
@@ -618,6 +651,7 @@ var Game = new Class({
 var Player = new Class({
     order: 0, // the player's number, starting from 0
     color: '', // color of the player's pieces
+    description: '', // country description text
 
     check: false, // is the player currently in check?
     inGame: true, // is the player currently in the game?
@@ -764,7 +798,9 @@ var Player = new Class({
     endTurn: function() {
     	var suffix = game.checkChecks();
         game.getLastMoveText().appendText(suffix);
-        game.nextPlayer();
+        if (suffix != '##') {
+            game.nextPlayer();
+        }
     },
     
     /*
@@ -800,6 +836,9 @@ var Player = new Class({
     	return true; // override this method
     },
     
+    /*
+     * @return JSON object containing player data
+     */
     export: function() {
     	return {
     		country: this.countryName,
@@ -814,6 +853,9 @@ var Player = new Class({
     	}
     },
     
+    /*
+     * Function called after this player is imported
+     */
     afterImport: function() {
     	return; // override this method
     }
@@ -1147,15 +1189,6 @@ var Square = new Class({
 					((x2 == x1 && (y2 == y1 - length || y2 == y1 + length)) || 
 					 (y2 == y1 && (x2 == x1 - length || x2 == x1 + length)));
     },
-
-    /*
-     * @params: dest = destination Square
-     * 			side = order of the given piece's owner
-     * @returns whether a king could move from here to dest
-     */
-    isKingMove: function(dest, side) {
-        return (!dest.isOccupied(side) && (dest.x == this.x || dest.x == this.x - 1 || dest.x == this.x + 1) && (dest.y == this.y || dest.y == this.y - 1 || dest.y == this.y + 1));
-    },
     
     /*
      * @returns the number of the player whose 2x4 starting region this square
@@ -1174,6 +1207,31 @@ var Square = new Class({
     		return -1;
     	}
     },
+
+    /*
+     * @returns the number of the player whose 3x5 starting region this square
+     * is in, or -1 if the square is not in a 3x5 starting region
+     */
+    inThreeByFive: function() {
+    	if (this.x <= 5 && this.y <= 3) {
+    		return 0;
+    	} else if (this.x <= 3 && this.y >= 4) {
+    		return 1;
+    	} else if (this.x >= 4 && this.y >= 6) {
+    		return 2;
+    	} else if (this.x >= 6 && this.y <= 5) {
+    		return 3;
+    	} else {
+    		return -1;
+    	}
+    },
+
+    /*
+     * @returns whether this square is in the center 2x2 region
+     */
+	inCenterTwoByTwo: function() {
+		return ((this.x == 4 || this.x == 5) && (this.y == 4 || this.y == 5));
+	},
 });
 
 var Piece = new Class({
@@ -1480,6 +1538,7 @@ var Piece = new Class({
     /*
      * @params: player = Player to give this piece to
      * Transfers control of this piece to another player.
+     * @return the Piece that was created
      */
     transferPossession: function(player) {
         this.element.removeClass(this.color);
@@ -1491,6 +1550,7 @@ var Piece = new Class({
         
         var newPiece = this.transform(this.pieceName); // transform to base piece ...
         this.getOwner().receivedPiece(newPiece); // ... and possibly to player-specific piece
+        return newPiece;
     },
     
     /*
@@ -1507,6 +1567,9 @@ var Piece = new Class({
     	return newPiece;
     },
     
+    /*
+     * @return JSON object containing piece data
+     */
     export: function() {
     	var pieceExport = {
     		x: this.x,
