@@ -77,16 +77,15 @@ var Aztecs = new Class({
 			function (piece) {
 				if (piece.object.pieceClass == 'Knight'){
 					piece.object.transform('Rook');
-					game.displayMove('N' + piece.object.getSquare().toString() + '=R');
 				} else if (piece.object.pieceClass == 'Rook'){
 					piece.object.transform('Knight');
-					game.displayMove('R' + piece.object.getSquare().toString() + '=N');
 				}
 				player.endTurn();
 			},
 			true
 		);
-    }
+        
+    },
 });
 
 var Britain = new Class({

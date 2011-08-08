@@ -537,9 +537,8 @@ var Game = new Class({
      * @params gameState: JSON object containing game state
      * Imports game from JSON
      */
-	import: function(gameState) {
+	import: function(state) {
 		var game = this;
-		var state = JSON.parse(gameState);
 		
 		// reset things, in case this is called in the middle of a game
 		$$('.piece').dispose();
@@ -626,14 +625,12 @@ var Game = new Class({
 		if (stage == 0) {
 			// Waiting for players
 			game.alert('Waiting for ' + (4 - players.length) + ' more player' + (players.length != 3 ? 's' : ''));
-			$$('#movesBox label')[0].innerHTML = 'Setup';
 		} else if (stage == 1) {
 			// Choosing countries
             var playersReady = players.filter(function (player) {
                 return player.country != '';
             }).length;
 			game.alert('Choose countries (' + playersReady + ' player' + (playersReady != 1 ? 's' : '') + ' ready)');
-			$$('#movesBox label')[0].innerHTML = 'Setup';
 			players.each(function (playerData) {
 				if (playerData.user == me) {
 					if (playerData.country != '') {
@@ -683,10 +680,15 @@ var Game = new Class({
         var pollRequest = new Request({
             url: baseUrl + 'Game/PollState/',
             data: 'id=' + gameId 
-                + '&turn=' + (this.turnNum * 4 + this.currentPlayer),
+                + '&turn=' + (this.turnNum * 4 + this.currentPlayer)
+                + '&num_chats=' + $$('#messages .msg').length,
             onSuccess: function (txt) {
-                if (txt != "") {
-                    game.import(txt);
+                var data = JSON.parse(txt);
+                if (data.state) {
+                    game.import(data.state);
+                }
+                if (data.chats) {
+                    game.displayChat(data.chats);
                 }
             }
         });
@@ -733,6 +735,45 @@ var Game = new Class({
      */
     amIUp: function() {
         return (currentPlayer == this.getCurrentPlayer().userName);
+    },
+
+    sendChat: function(msg) {
+        var game = this;
+
+        var chatRequest = new Request({
+            url: baseUrl + 'Game/SendChat/',
+            data: 'id=' + gameId + '&msg=' + msg,
+            onSuccess: function (txt) {
+                game.displayChat (JSON.parse(txt));
+            }
+        });
+
+        chatRequest.send();
+    },
+
+    displayChat: function(chat) {
+        var game = this;
+
+        $('messages').clear();
+
+        chat.each(function (msg) {
+            var color = '';
+            var country = 'Guest';
+            var playerObj = game.players.filter(function (player) {
+                return (player.userName == msg[0]);
+            });
+            if (playerObj.length > 0) {
+                color = playerObj[0].color;
+                country = playerObj[0].countryName;
+            }
+
+            var msg = new Element('div.msg', {
+                html: '<span class="name ' + color + '">' + msg[0] + ' (' + country + ') :</span> ' + msg[1]
+            });
+            msg.inject($('messages'));
+        });
+
+        $('messages').scrollTop = $('messages').scrollHeight; // scroll down
     }
 });
 

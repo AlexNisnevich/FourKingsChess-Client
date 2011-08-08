@@ -62,4 +62,24 @@ if ($('chooseCountryButton')) {
     });
 }
 
+if ($('chatSendButton')) {
+    $('chatSendButton').addEvent('click', function () {
+        game.sendChat($('myMessage').value);
+        $('myMessage').value = '';
+    });
+
+    $('myMessage').addEvent('keydown', function (event) {
+        if (event.key == 'enter') {
+            game.sendChat($('myMessage').value);
+            $('myMessage').value = '';
+        }
+    });
+}
+
+var tabBox = new TabPane('tabbedBox');
+
+tabBox.addEvent('change', function () {
+    $('messages').scrollTop = $('messages').scrollHeight; // scroll down
+});
+
 setInterval(function () { game.pollGameState(); }, 2500);
