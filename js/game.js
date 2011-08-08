@@ -105,25 +105,31 @@ var Game = new Class({
 	},
 	
 	/*
-	 * @params: self-explanatory
-	 * @return a new Player given countryName and color
+	 * @params: self-explanatory (color is optional - if blank, color is given by default order)
+	 * Adds a new Player given countryName and color
+	 * @return the new Player
 	 */
 	addPlayer: function(countryName, color) {
 		var order = this.players.length;
+		if (!color) {
+			color = ['red', 'green', 'yellow', 'blue'][order];
+		}
 		var player = AbstractFactory.create(countryName, [order, color])
 		this.players.push(player);
 		player.setup();
 		$$('#moves .heading.' + color).appendText(player.countryName);
+		
+		return player;
 	},
 	
 	/*
 	 * Calls the start of the first turn and the first player's move
 	 */
 	startGame: function() {
+		this.clearStatus();
+		
 		this.turnStart();
 		this.playerStart();
-		this.clearStatus();
-		this.movable = true;
 		
 		$('setup').dispose();
 		$('moves').show();
@@ -134,6 +140,7 @@ var Game = new Class({
 	},
 
     displayDescriptions: function() {
+		$$('.description').dispose();
         this.players.each( function(player) {
             var description = new Element('div.description');
             description.innerHTML = '<span class="countryName ' + player.color +'">' + player.countryName + ':</span> ' + player.description;
@@ -287,8 +294,9 @@ var Game = new Class({
 	
 	/*
 	 * Creates a prompt with recommended settings (see prompt() for params)
+	 * dontEndTurn: (optional) Don't end the player's turn at the end of the prompt
 	 */
-	promptSimple: function (txt, selectType, buttonType, selector, onConfirm) {
+	promptSimple: function (txt, selectType, buttonType, selector, onConfirm, dontEndTurn) {
 		var onAvailable = function () {};
 		var onSelect = function () {};
 		var onCancel = function () {};
@@ -305,7 +313,9 @@ var Game = new Class({
 			};
 			onEnd = function () {
 				$$('#board .square').removeClass('hoverAvailable').removeClass('hoverValid');
-				game.getCurrentPlayer().endTurn();
+				if (!dontEndTurn) {
+					game.getCurrentPlayer().endTurn();
+				}
 			};
 			break;
 		}
@@ -580,7 +590,7 @@ var Game = new Class({
 		
         // display last move
 
-        this.displayLastMove(state.lastMove);
+        this.displayLastMove(state.lastMove, true);
 
 		// run any special import events
 		
@@ -597,6 +607,45 @@ var Game = new Class({
         this.displayDescriptions();
         
         this.checkChecks();
+	},
+	
+	/*
+     * @params gameState: JSON object containing player data
+     * Imports player data from JSON
+     */
+	importPlayers: function(players, stage, me) {
+		game = this;
+		players = JSON.parse(players);
+		
+		if (stage == 0) {
+			// Waiting for players
+			game.alert('Waiting for ' + (4 - players.length) + ' more players');
+			$$('#movesBox label')[0].innerHTML = 'Setup';
+			$('setup').hide();
+		} else if (stage == 1) {
+			// Choosing countries
+			game.alert('Choose countries');
+			$$('#movesBox label')[0].innerHTML = 'Setup';
+			$('setup').hide();
+			players.each(function (playerData) {
+				if (playerData.user == me) {
+					if (playerData.country == 'null') {
+						$('setup').show();
+					} else {
+						alert("You'll be playing as " + playerData.country);
+					}
+				}
+			});
+		} else if (game.players.length == 0) {
+			// Starting game
+			players.each(function (playerData) {
+				var player = game.addPlayer(playerData.country);
+				player.userName = playerData.user;
+			});
+			this.startGame();
+		} else {
+			// Game already in progress
+		}
 	},
 
     /*
@@ -634,7 +683,7 @@ var Game = new Class({
      * @params lastMove: array as created in Game.export()
      * Highlights the last move made
      */
-    displayLastMove: function(lastMove) {
+    displayLastMove: function(lastMove, animate) {
         if (lastMove) {
             $$('#board .square').each(function (square) {
                 if ((square.object.x == lastMove[0][0] && square.object.y == lastMove[0][1]) ||
@@ -644,6 +693,23 @@ var Game = new Class({
                     square.removeClass('hoverLast');
                 }
             });
+            
+            // animate move
+            if (animate) {
+	            var dest = new Square(lastMove[0][0], lastMove[0][1]);
+	            var piece = dest.getPiece();
+	            dest = $(piece.getSquare());
+	            piece.x = lastMove[1][0]; piece.y = lastMove[1][1];
+	            piece.refresh();
+	            var mover = new Fx.Move($(piece), {
+	            	relativeTo: dest,
+	                position: 'center',
+	                edge: 'center',
+	                offset: {x: -2, y: -2}
+	            });
+	            mover.start();
+	            piece.x = lastMove[0][0]; piece.y = lastMove[0][1];
+            }
         }
     }
 });

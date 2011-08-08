@@ -409,6 +409,77 @@ var HuronPawn = new Class({
     }
 });
 
+var MafiaRook = new Class ({
+	Extends: Rook,
+	
+	className: 'MafiaRook',
+	
+	canMove: function(square){
+		return this.getSquare().isRookMove(square, this.side, 3);
+	},
+	afterMove: function() {
+		if (this.lastCapture != null){
+			this.moveTo(this.lastPosition, 'normal');
+			game.getLastMoveText().appendText(' (sh)');
+		}
+	}	
+});
+
+var MafiaBishop = new Class ({
+	Extends: Bishop,
+	
+	className: 'MafiaBishop',
+	
+	canMove: function(square){
+		return this.getSquare().isBishopMove(square, this.side, 3);
+	},
+	afterMove: function() {
+		if (this.lastCapture != null){
+			this.moveTo(this.lastPosition, 'normal');
+			game.getLastMoveText().appendText(' (sh)');
+		}
+	}	
+});
+
+var MafiaKnight = new Class ({
+	Extends: Knight,
+	
+	className: 'MafiaKnight',
+	
+	afterMove: function() {
+		if (this.lastCapture != null){
+			this.moveTo(this.lastPosition, 'normal');
+			game.getLastMoveText().appendText(' (sh)');
+		}
+	}	
+});
+
+var MafiaKing = new Class ({
+	Extends: King,
+	
+	className: 'MafiaKing',
+	
+	afterMove: function() {
+		if (this.lastCapture != null){
+			this.moveTo(this.lastPosition, 'normal');
+			game.getLastMoveText().appendText(' (sh)');
+		}
+	}	
+});
+
+var MafiaPawn = new Class ({
+	Extends: Pawn,
+	
+	className: 'MafiaPawn',
+	
+	afterMove: function() {
+		if (this.lastCapture != null){
+			this.moveTo(this.lastPosition, 'normal');
+			game.getLastMoveText().appendText(' (sh)');
+		}
+	}	
+});
+
 var MongolPawn =  new Class({
 	Extends: Pawn,
 	

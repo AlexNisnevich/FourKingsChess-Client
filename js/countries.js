@@ -49,6 +49,45 @@ var Athens = new Class({
     }
 });
 
+var Aztecs = new Class({
+    Extends: Player,
+
+    countryName: 'Aztecs',
+
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.description = 'On your turn, instead of moving you may change one of your knights into a rook, or vice versa.';
+        this.setupPieces = [['King', 'Rook', 'Rook', 'Knight'],
+		                    ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+        this.promotionPieces = [['Rook', 0],
+	                            ['Bishop', 0],
+	                            ['Knight', 0]];
+    },
+
+    startTurn: function () {
+        this.parent();
+		var player = this;
+        game.promptSimple('Select a knight or rook to transform, if you wish to transform a piece instead of moving this turn.',
+			'piece',
+			'confirmCancel',
+			function (piece) {
+			    piece = piece.object;
+			    return (piece.side == player.order && (piece.pieceClass == 'Rook' || piece.pieceClass == 'Knight'));
+			},
+			function (piece) {
+				if (piece.object.pieceClass == 'Knight'){
+					piece.object.transform('Rook');
+				} else if (piece.object.pieceClass == 'Rook'){
+					piece.object.transform('Knight');
+				}
+				player.endTurn();
+			},
+			true
+		);
+        
+    },
+});
+
 var Britain = new Class({
     Extends: Player,
 
@@ -137,6 +176,26 @@ var Jerusalem = new Class({
             }
         });
     }
+});
+
+var Mafia = new Class({
+	Extends: Player,
+	
+	countryName: 'Mafia',
+	
+	initialize: function (order, color) {
+	    this.parent(order, color);
+	    this.description = 'Your pieces do not move when they capture other pieces. Instead, if an opponents piece is within capturing range of one of your pieces and you choose to capture it, you remove it from the board without actually moving your piece. This action counts as your movement even though you have not technically moved.  Your bishops and rooks may only move up to three squares each turn.';
+		this.setupPieces = [['MafiaKing', 'MafiaRook', 'MafiaBishop', 'MafiaKnight'], 
+		                    ['MafiaPawn', 'MafiaPawn', 'MafiaPawn', 'MafiaPawn']];
+	    this.promotionPieces = [['MafiaRook', 0],
+								['MafiaBishop', 0]
+								['MafiaKnight', 0]];
+	    this.derivedPieces = [['Rook', 'MafiaRook'],
+							   ['Bishop', 'MafiaBishop'],
+							   ['Knight', 'MafiaKnight']
+							   ['Pawn', 'MafiaPawn']];
+	}
 });
 
 var Mongols = new Class({

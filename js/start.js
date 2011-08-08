@@ -5,7 +5,7 @@ var game = new Game();
 game.setup();
 game.alert('Choose countries');
 
-var countries = ['AncientGreece', 'Athens', 'Britain', 'Hurons', 'Jerusalem', 'Mongols', 'PapalStates', 'Sparta'];
+var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'Hurons', 'Jerusalem', 'Mafia', 'Mongols', 'PapalStates', 'Sparta'];
 
 $$('#setup select').each(function(dropdown) {
 	var blankOption = new Element('option', {
@@ -23,24 +23,43 @@ $$('#setup select').each(function(dropdown) {
 	});
 });
 
-$('startButton').addEvent('click', function() {
-	if ($$('#setup select').every(function (dropdown) {
-		return (dropdown.getSelected()[0].value != '');
-	})) {
-			game.addPlayer($('selectRed').getSelected()[0].value, 'red');
-			game.addPlayer($('selectGreen').getSelected()[0].value, 'green');
-			game.addPlayer($('selectYellow').getSelected()[0].value, 'yellow');
-			game.addPlayer($('selectBlue').getSelected()[0].value, 'blue');
-			game.startGame();
-	}
-});
+// Phased out - only for local testing
+if ($('startButton')) {
+    $('startButton').addEvent('click', function() {
+	    if ($$('#setup select').every(function (dropdown) {
+		    return (dropdown.getSelected()[0].value != '');
+	    })) {
+			    game.addPlayer($('selectRed').getSelected()[0].value, 'red');
+			    game.addPlayer($('selectGreen').getSelected()[0].value, 'green');
+			    game.addPlayer($('selectYellow').getSelected()[0].value, 'yellow');
+			    game.addPlayer($('selectBlue').getSelected()[0].value, 'blue');
+			    game.startGame();
+	    }
+    });
+}
 
-/* $('importButton').addEvent('click', function() {
-	game.import($('gameState').value);
-});
+if ($('joinButton')) {
+    $('joinButton').addEvent('click', function () {
+        location.replace(baseUrl + 'Game/Join/' + gameId);
+    });
+}
 
-$('exportButton').addEvent('click', function() {
-	$('gameState').innerHTML = JSON.stringify(game.export());
-}); */
+if ($('chooseCountryButton')) {
+    $('countryDropDown').addEvent('change', function () {
+        $$('#board .piece').dispose();
+        game.players = [];
+        game.addPlayer($('countryDropDown').getSelected()[0].value, 'white');
+        game.displayDescriptions();
+
+        // remove direction marks from pawns
+        $$('#board .piece').each(function (piece) {
+            piece.setProperty('src', baseUrl + 'images/pieces/' + piece.object.pieceName + '_white.png');
+        });
+    });
+
+    $('chooseCountryButton').addEvent('click', function () {
+        location.replace(baseUrl + 'Game/ChooseCountry/' + gameId + '/' + $('countryDropDown').getSelected()[0].value);
+    });
+}
 
 setInterval(function () { game.pollGameState(); }, 2500);
