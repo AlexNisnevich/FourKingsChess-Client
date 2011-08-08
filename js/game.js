@@ -118,7 +118,7 @@ var Game = new Class({
 		this.players.push(player);
 		player.setup();
 		$$('#moves .heading.' + color).appendText(player.countryName);
-		
+        
 		return player;
 	},
 	
@@ -127,9 +127,9 @@ var Game = new Class({
 	 */
 	startGame: function() {
 		this.clearStatus();
-		
 		this.turnStart();
 		this.playerStart();
+		this.movable = true;
 		
 		$('setup').dispose();
 		$('moves').show();
@@ -314,8 +314,8 @@ var Game = new Class({
 			onEnd = function () {
 				$$('#board .square').removeClass('hoverAvailable').removeClass('hoverValid');
 				if (!dontEndTurn) {
-					game.getCurrentPlayer().endTurn();
-				}
+				 	game.getCurrentPlayer().endTurn();
+		        }
 			};
 			break;
 		}
@@ -508,8 +508,14 @@ var Game = new Class({
 			}),
 			moves: $$('#moves tr').map(function (turn) {
                 return turn.getChildren().map(function (move) {
+                    if (document.all) { // firefox fix
+                        var text = move.innerText.replace('+', 'plus');
+                    } else{
+                        var text = move.textContent.replace('+', 'plus');
+                    }
+
                     return {
-                        text: move.innerText.replace('+', 'plus'),
+                        text: text,
                         class: move.getAttribute('class')
                     };
                 });
@@ -619,20 +625,27 @@ var Game = new Class({
 		
 		if (stage == 0) {
 			// Waiting for players
-			game.alert('Waiting for ' + (4 - players.length) + ' more players');
+			game.alert('Waiting for ' + (4 - players.length) + ' more player' + (players.length != 3 ? 's' : ''));
 			$$('#movesBox label')[0].innerHTML = 'Setup';
-			$('setup').hide();
 		} else if (stage == 1) {
 			// Choosing countries
-			game.alert('Choose countries');
+            var playersReady = players.filter(function (player) {
+                return player.country != '';
+            }).length;
+			game.alert('Choose countries (' + playersReady + ' player' + (playersReady != 1 ? 's' : '') + ' ready)');
 			$$('#movesBox label')[0].innerHTML = 'Setup';
-			$('setup').hide();
 			players.each(function (playerData) {
 				if (playerData.user == me) {
-					if (playerData.country == 'null') {
-						$('setup').show();
-					} else {
-						alert("You'll be playing as " + playerData.country);
+					if (playerData.country != '') {
+						$$('#board .piece').dispose();
+                        game.players = [];
+                        game.addPlayer(playerData.country, 'white');
+                        game.displayDescriptions();
+
+                        // remove direction marks from pawns
+                        $$('#board .piece').each(function (piece) {
+                            piece.setProperty('src', baseUrl + 'images/pieces/' + piece.object.pieceName + '_white.png');
+                        });
 					}
 				}
 			});
@@ -641,10 +654,12 @@ var Game = new Class({
 			players.each(function (playerData) {
 				var player = game.addPlayer(playerData.country);
 				player.userName = playerData.user;
+                $$('#moves .player.' + player.color).appendText('(' + playerData.user + ')');
 			});
 			this.startGame();
 		} else {
 			// Game already in progress
+            // We don't really need to do anything
 		}
 	},
 
@@ -711,6 +726,13 @@ var Game = new Class({
 	            piece.x = lastMove[0][0]; piece.y = lastMove[0][1];
             }
         }
+    },
+
+    /*
+     * @return Whether the logged-in player can move
+     */
+    amIUp: function() {
+        return (currentPlayer == this.getCurrentPlayer().userName);
     }
 });
 
@@ -718,6 +740,7 @@ var Player = new Class({
     order: 0, // the player's number, starting from 0
     color: '', // color of the player's pieces
     description: '', // country description text
+    userName: '', // who is playing as this country?
 
     check: false, // is the player currently in check?
     inGame: true, // is the player currently in the game?
@@ -914,7 +937,8 @@ var Player = new Class({
 			    inGame: this.inGame,
                 justDefeated: this.justDefeated,
 			    promotionPieces: this.promotionPieces,
-			    lastMoveType: this.lastMoveType
+			    lastMoveType: this.lastMoveType,
+                userName: this.userName,
     		}
     	}
     },
@@ -1416,7 +1440,8 @@ var Piece = new Class({
     	        var piece = draggable.object;
     	
     	        if (droppable && !piece.getSquare().equals(droppable.object)) {
-    	        	if (piece.side == game.currentPlayer 
+    	        	if (game.amIUp() 
+                            && piece.side == game.currentPlayer 
     	            		&& piece.canMove(droppable.object)
     	            		&& (!droppable.object.isOccupied() || piece.canCapture(droppable.object.getPiece()))) {
     	                droppable.addClass('hoverValid');
@@ -1439,7 +1464,8 @@ var Piece = new Class({
     	        var piece = draggable.object;
                 piece.getSquare().element.removeClass('hoverCurrent');
     	
-    	        if (droppable 
+    	        if (droppable
+                        && game.amIUp()
     	        		&& piece.side == game.currentPlayer 
     	        		&& piece.canMove(droppable.object)
     	        		&& (!droppable.object.isOccupied() || piece.canCapture(droppable.object.getPiece()))) {
