@@ -259,17 +259,17 @@ var Game = new Class({
 			$('confirmButton').show();
 			$('confirmButton').addEvent('click', function () {
 				if (game.selection) {
+					game.clearStatus();
 					onConfirm(game.selection);
                     game.selection = null;
-					game.clearStatus();
 				}
 			});
 			
 			$('cancelButton').show()
 			$('cancelButton').addEvent('click', function () {
+				game.clearStatus();
 				onCancel();
                 game.selection = null;
-				game.clearStatus();
 			});
 		}
 		
