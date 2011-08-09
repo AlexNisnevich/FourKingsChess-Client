@@ -219,7 +219,7 @@ var ByzantineKnight = new Class({
     Extends: Knight,
     Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineKnight',
+    className: 'ByzantineKnight',
 
     canMove: function (square) {
         return (this.parent(square) || this.byzantineRetreat(square, this.side));
@@ -230,7 +230,7 @@ var ByzantineRook = new Class({
     Extends: Rook,
     Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineRook',
+    className: 'ByzantineRook',
 
     canMove: function (square) {
         return (this.parent(square) || this.byzantineRetreat(square, this.side));
@@ -241,7 +241,7 @@ var ByzantineKing = new Class({
     Extends: King,
     Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineKing',
+    className: 'ByzantineKing',
 
     canMove: function (square) {
         return (this.parent(square) || this.byzantineRetreat(square, this.side));
@@ -252,7 +252,7 @@ var ByzantineBishop = new Class({
     Extends: Bishop,
     Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineBishop',
+    className: 'ByzantineBishop',
 
     canMove: function (square) {
         return (this.parent(square) || this.byzantineRetreat(square, this.side));
@@ -262,7 +262,7 @@ var ByzantineBishop = new Class({
 var ByzantinePawn = new Class({
     Extends: Pawn,
 
-    pieceClass: 'ByzantinePawn',
+    className: 'ByzantinePawn',
 
     canMove: function (square) {
         return (this.parent(square) || this.byzantineRetreat(square, this.side));
@@ -485,7 +485,7 @@ var HuronPawn = new Class({
 var MacedoniaPawn = new Class({
     Extends: Pawn,
 
-    pieceClass: 'MacedoniaPawn',
+    className: 'MacedoniaPawn',
 
     canMove: function (square) {
         return (this.parent(square) ||
@@ -541,7 +541,7 @@ var MacedoniaPawn = new Class({
 var MafiaRook = new Class ({
 	Extends: Rook,
 	
-	pieceClass: 'MafiaRook',
+	className: 'MafiaRook',
 	
 	canMove: function(square){
 		return this.getSquare().isRookMove(square, this.side, 3);
@@ -557,7 +557,7 @@ var MafiaRook = new Class ({
 var MafiaBishop = new Class ({
 	Extends: Bishop,
 	
-	pieceClass: 'MafiaBishop',
+	className: 'MafiaBishop',
 	
 	canMove: function(square){
 		return this.getSquare().isBishopMove(square, this.side, 3);
@@ -573,7 +573,7 @@ var MafiaBishop = new Class ({
 var MafiaKnight = new Class ({
 	Extends: Knight,
 	
-	pieceClass: 'MafiaKnight',
+	className: 'MafiaKnight',
 	
 	afterMove: function() {
 		if (this.lastCapture != null){
@@ -586,7 +586,7 @@ var MafiaKnight = new Class ({
 var MafiaKing = new Class ({
 	Extends: King,
 	
-	pieceClass: 'MafiaKing',
+	className: 'MafiaKing',
 	
 	afterMove: function() {
 		if (this.lastCapture != null){
@@ -599,7 +599,7 @@ var MafiaKing = new Class ({
 var MafiaPawn = new Class ({
 	Extends: Pawn,
 	
-	pieceClass: 'MafiaPawn',
+	className: 'MafiaPawn',
 	
 	afterMove: function() {
 		if (this.lastCapture != null){
@@ -678,7 +678,7 @@ var ArchBishop = new Class({
 var VampKing = new Class({
     Extends: King,
 
-    pieceClass: 'VampKing',
+    className: 'VampKing',
 
     canMove: function (square) {
         return (this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2));
@@ -688,7 +688,7 @@ var VampKing = new Class({
 var VampPawn = new Class({
     Extends: Pawn,
 
-    pieceClass: 'VampPawn',
+    className: 'VampPawn',
 
     afterMove: function () {
         if (this.lastCapture != null) {

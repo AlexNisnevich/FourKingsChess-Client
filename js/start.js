@@ -1,5 +1,5 @@
 var baseUrl = 'http://alex.nisnevich.com/playchess/';
-var gameId = -1; // placeholder
+var local = true; // disables multiplayer connections (overridden in multiplayer game)
 
 var game = new Game();
 game.setup();
@@ -87,8 +87,10 @@ if ($('chatSendButton')) {
 var tabBox = new TabPane('tabbedBox');
 
 tabBox.addEvent('change', function () {
-    $('messages').scrollTop = $('messages').scrollHeight; // scroll down
     $$('.tab').removeClass('notify');
+    if ($('messages')) {
+        $('messages').scrollTop = $('messages').scrollHeight; // scroll down
+    }
 });
 
 setInterval(function () { game.pollGameState(); }, 2500);

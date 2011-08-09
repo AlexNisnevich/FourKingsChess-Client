@@ -238,7 +238,7 @@ var Game = new Class({
 	
 	/*
 	 * @params: txt = the text to display
-	 * 			selectType = available types: "piece"
+	 * 			selectType = available types: "piece", "square"
 	 * 			buttonType = available types: "confirmCancel"
 	 * 			selector(item) = filter function to determine whether an object is selectable
 	 * 			onAvailable(item) = callback for selectable items
@@ -270,20 +270,16 @@ var Game = new Class({
 			});
 		}
 		
-		switch (selectType) {
-		case 'piece':
-			$$('#board .piece').filter(function (piece) {
-				return selector(piece);
-			}).each(function (piece) {
-				onAvailable(piece);
-				piece.addClass('clickable');
-				piece.addEvent('click', function () {
-					game.selection = piece;
-					onSelect(piece);
-				})
-			});
-			break;
-		}
+        $$('#board .' + selectType).filter(function (item) {
+			return selector(item);
+		}).each(function (item) {
+			onAvailable(item);
+			item.addClass('clickable');
+			item.addEvent('click', function () {
+				game.selection = item;
+				onSelect(item);
+			})
+		});
 		
 		this.onEndPrompt = onEnd;
 		this.movable = false;
@@ -296,7 +292,7 @@ var Game = new Class({
 	promptSimple: function (txt, selectType, buttonType, selector, onConfirm, dontEndTurn) {
 		var onAvailable = function () {};
 		var onSelect = function () {};
-		var onCancel = function () {};
+		var onCancel = function () {}; // left blank
 		var onEnd = function () {};
 		
 		switch (selectType) {
@@ -308,14 +304,24 @@ var Game = new Class({
 				$$('#board .square').removeClass('hoverValid');
 				piece.object.getSquare().element.addClass('hoverValid');
 			};
-			onEnd = function () {
-				$$('#board .square').removeClass('hoverAvailable').removeClass('hoverValid');
-				if (!dontEndTurn) {
-				 	game.getCurrentPlayer().endTurn();
-		        }
+			break;
+        case 'square':
+			onAvailable = function (square) {
+				square.addClass('hoverAvailable')
+			};
+			onSelect = function (square) {
+				$$('#board .square').removeClass('hoverValid');
+				square.addClass('hoverValid');
 			};
 			break;
 		}
+
+        onEnd = function () {
+			$$('#board .square').removeClass('hoverAvailable').removeClass('hoverValid');
+			if (!dontEndTurn) {
+				game.getCurrentPlayer().endTurn();
+		    }
+		};
 		
 		this.prompt(txt, selectType, buttonType, selector, onAvailable, onSelect, onConfirm, onCancel, onEnd); 
 	},
@@ -661,6 +667,8 @@ var Game = new Class({
      * Publishes game state to server
      */
     publishGameState: function() {
+        if (local) return;
+
         new Request.HTML({
             url: baseUrl + 'Game/SaveState/'
         }).post('id=' + gameId 
@@ -672,6 +680,8 @@ var Game = new Class({
      * Polls server for new game state. If there is a new game state, imports it.
      */
     pollGameState: function() {
+        if (local) return;
+
         var game = this;
 
         var pollRequest = new Request({
@@ -734,6 +744,8 @@ var Game = new Class({
      * @return Whether the logged-in player can move
      */
     amIUp: function() {
+        if (local) return true;
+
         return (currentPlayer == this.getCurrentPlayer().userName);
     },
 
