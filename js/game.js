@@ -131,10 +131,7 @@ var Game = new Class({
 		this.playerStart();
 		this.movable = true;
 		
-		$('setup').dispose();
-		$('moves').show();
-
-        this.displayDescriptions();
+		this.displayDescriptions();
 
         this.publishGameState();
 	},
@@ -668,7 +665,7 @@ var Game = new Class({
             url: baseUrl + 'Game/SaveState/'
         }).post('id=' + gameId 
             + '&state=' + JSON.stringify(this.export())
-            + '&turn=' + (this.turnNum * 4 + this.currentPlayer));
+            + '&turn=' + this.turnNum);
     },
 
     /*
@@ -680,10 +677,11 @@ var Game = new Class({
         var pollRequest = new Request({
             url: baseUrl + 'Game/PollState/',
             data: 'id=' + gameId 
-                + '&turn=' + (this.turnNum * 4 + this.currentPlayer)
+                + '&num_state=' + numState
                 + '&num_chats=' + $$('#messages .msg').length,
             onSuccess: function (txt) {
                 var data = JSON.parse(txt);
+                var numState = data.num;
                 if (data.state) {
                     game.import(data.state);
                     game.tabNotification('movesTab');
@@ -744,7 +742,7 @@ var Game = new Class({
 
         var chatRequest = new Request({
             url: baseUrl + 'Game/SendChat/',
-            data: 'id=' + gameId + '&msg=' + msg,
+            data: 'id=' + gameId + '&msg=' + msg.replace(/"/g, "'"),
             onSuccess: function (txt) {
                 game.displayChat (JSON.parse(txt));
             }
@@ -890,7 +888,11 @@ var Player = new Class({
     		return !defeatingPlayer.promotionPieces.some(function (existingPiece) {
     			return existingPiece[0] == promotionPiece[0]; // not already in promotionPieces
     		}) && !defeatingPlayer.derivedPieces.some(function (derivedPiece) {
-    			return derivedPiece[0] == promotionPiece[0]; // doesn't have any derived pieces
+                if (derivedPiece && promotionPiece) {
+    			    return derivedPiece[0] == promotionPiece[0]; // doesn't have any derived pieces
+                } else {
+                    return false;
+                }
     		});
     	});
     	defeatingPlayer.promotionPieces.append(newPromotionPieces);
