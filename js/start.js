@@ -5,7 +5,12 @@ var game = new Game();
 game.setup();
 game.alert('Choose countries');
 
-var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'Hurons', 'Jerusalem', 'Mafia', 'Mongols', 'PapalStates', 'Sparta'];
+var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire', 'Hurons', 'Jerusalem', 'Macedonia', 'Mafia', 'Mongols', 'PapalStates', 'Sparta', 'Transylvania'];
+var countriesAncient = ['AncientGreece', 'Athens', 'Macedonia', 'Sparta'];
+var countriesMedieval = ['Aztecs', 'ByzantineEmpire', 'Jerusalem', 'Mongols'];
+var countriesEnlightenment = ['Britain', 'Hurons', 'PapalStates'];
+var countriesModern = ['Mafia'];
+var countriesFantasy = ['Transylvania'];
 
 $$('#setup select').each(function(dropdown) {
 	var blankOption = new Element('option', {
@@ -68,18 +73,22 @@ if ($('chatSendButton')) {
         $('myMessage').value = '';
     });
 
-    $('myMessage').addEvent('keydown', function (event) {
-        if (event.key == 'enter') {
-            game.sendChat($('myMessage').value);
-            $('myMessage').value = '';
-        }
-    });
+    // Enter doesn't work correctly on IE, so just disable the check for now
+    if (!Browser.ie) {
+        $('myMessage').addEvent('keydown', function (event) {
+            if (event.key == 'enter') {
+                game.sendChat($('myMessage').value);
+                $('myMessage').value = '';
+            }
+        });
+    }
 }
 
 var tabBox = new TabPane('tabbedBox');
 
 tabBox.addEvent('change', function () {
     $('messages').scrollTop = $('messages').scrollHeight; // scroll down
+    $$('.tab').removeClass('notify');
 });
 
 setInterval(function () { game.pollGameState(); }, 2500);

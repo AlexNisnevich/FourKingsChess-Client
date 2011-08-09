@@ -621,16 +621,16 @@ var Game = new Class({
 	importPlayers: function(players, stage, me) {
 		game = this;
 		players = JSON.parse(players);
-		
-		if (stage == 0) {
+
+        if (stage == 0) {
 			// Waiting for players
-			game.alert('Waiting for ' + (4 - players.length) + ' more player' + (players.length != 3 ? 's' : ''));
+			this.alert('Waiting for ' + (4 - players.length) + ' more player' + (players.length != 3 ? 's' : ''));
 		} else if (stage == 1) {
 			// Choosing countries
             var playersReady = players.filter(function (player) {
                 return player.country != '';
             }).length;
-			game.alert('Choose countries (' + playersReady + ' player' + (playersReady != 1 ? 's' : '') + ' ready)');
+            this.alert('Choose countries (' + playersReady + ' player' + (playersReady != 1 ? 's' : '') + ' ready)');
 			players.each(function (playerData) {
 				if (playerData.user == me) {
 					if (playerData.country != '') {
@@ -686,9 +686,11 @@ var Game = new Class({
                 var data = JSON.parse(txt);
                 if (data.state) {
                     game.import(data.state);
+                    game.tabNotification('movesTab');
                 }
                 if (data.chats) {
                     game.displayChat(data.chats);
+                    game.tabNotification('chatTab');
                 }
             }
         });
@@ -759,21 +761,35 @@ var Game = new Class({
         chat.each(function (msg) {
             var color = '';
             var country = 'Guest';
-            var playerObj = game.players.filter(function (player) {
-                return (player.userName == msg[0]);
-            });
-            if (playerObj.length > 0) {
-                color = playerObj[0].color;
-                country = playerObj[0].countryName;
+            
+            if (stage >= 2) {
+                var playerObj = game.players.filter(function (player) {
+                    return (player.userName == msg[0]);
+                });
+
+                if (playerObj.length > 0) {
+                    color = playerObj[0].color;
+                    country = playerObj[0].countryName;
+                }
+
+                var msgHtml = '<span class="name ' + color + '">' + msg[0] + ' (' + country + ') :</span> ' + msg[1];
+            } else {
+                var msgHtml = '<span class="name">' + msg[0] + ':</span> ' + msg[1];
             }
 
             var msg = new Element('div.msg', {
-                html: '<span class="name ' + color + '">' + msg[0] + ' (' + country + ') :</span> ' + msg[1]
+                html: msgHtml
             });
             msg.inject($('messages'));
         });
 
         $('messages').scrollTop = $('messages').scrollHeight; // scroll down
+    },
+
+    tabNotification: function(tab) {
+        if (!$(tab).hasClass('active')) {
+            $(tab).addClass('notify');
+        }
     }
 });
 

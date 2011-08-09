@@ -103,6 +103,27 @@ var Britain = new Class({
     }
 });
 
+var ByzantineEmpire = new Class({
+    Extends: Player,
+
+    countryName: 'ByzantineEmpire',
+
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.description = 'On your turn, instead of moving a piece normally, you can move any of your pieces to any open square in your 2x4 starting area. If the piece is outside your 3x5 area and is not a pawn, you may use this ability to move it into a square in your 2x4 area that is occupied by an enemy piece, capturing the enemy piece.';
+        this.setupPieces = [['ByzantineKing', 'ByzantineRook', 'ByzantineBishop', 'ByzantineKnight'],
+		                    ['ByzantinePawn', 'ByzantinePawn', 'ByzantinePawn', 'ByzantinePawn']];
+        this.promotionPieces = [['ByzantineRook', 0],
+								['ByzantineBishop', 0]
+								['ByzantineKnight', 0]];
+        this.derivedPieces = [['Rook', 'ByzantineRook'],
+							   ['Bishop', 'ByzantineBishop'],
+							   ['Knight', 'ByzantineKnight'],
+							   ['Pawn', 'ByzantinePawn'],
+                               ['King', 'ByzantineKing']];
+    }
+});
+
 var Hurons = new Class({
     Extends: Player,
 
@@ -179,6 +200,23 @@ var Jerusalem = new Class({
     }
 });
 
+var Macedonia = new Class({
+    Extends: Player,
+
+    countryName: 'Macedonia',
+
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.description = 'Your pawns can also move or capture twice as far away as a normal pawn (that is, they can move always move one or two squares forward , can move two or four squares forward when on the second row, and can capture one or two squares diagonally), and can promote to a rook, bishop, or queen. You can only have one queen in play at a time.';
+        this.setupPieces = [['King', 'Rook', 'Bishop', 'MacedoniaPawn'],
+		                    ['MacedoniaPawn', 'MacedoniaPawn', 'MacedoniaPawn', 'MacedoniaPawn']];
+        this.promotionPieces = [['Queen', 1],
+                                ['Rook', 0],
+								['Bishop', 0]];
+        this.derivedPieces = [['Pawn', 'MacedoniaPawn']];
+    }
+});
+
 var Mafia = new Class({
 	Extends: Player,
 	
@@ -186,7 +224,7 @@ var Mafia = new Class({
 	
 	initialize: function (order, color) {
 	    this.parent(order, color);
-	    this.description = 'Your pieces do not move when they capture other pieces. Instead, if an opponents piece is within capturing range of one of your pieces and you choose to capture it, you remove it from the board without actually moving your piece. This action counts as your movement even though you have not technically moved.  Your bishops and rooks may only move up to three squares each turn.';
+	    this.description = 'Your pieces do not move when they capture other pieces. Instead, if an opponent\'s piece is within capturing range of one of your pieces and you choose to capture it, you remove it from the board without actually moving your piece. This action counts as your movement even though you have not technically moved.  Your bishops and rooks may only move up to three squares each turn.';
 		this.setupPieces = [['MafiaKing', 'MafiaRook', 'MafiaBishop', 'MafiaKnight'], 
 		                    ['MafiaPawn', 'MafiaPawn', 'MafiaPawn', 'MafiaPawn']];
 	    this.promotionPieces = [['MafiaRook', 0],
@@ -248,4 +286,22 @@ var Sparta = new Class({
 	}
 	
 	//@TODO: Once per game, while in check, you may move your king and warrior on the same turn.
+});
+
+var Transylvania = new Class({
+    Extends: Player,
+
+    countryName: 'Transylvania',
+
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.description = 'When one of your pawns captures a piece, it promotes to the piece it captured. Your king can also jump three squares diagonally.';
+        this.setupPieces = [['VampKing', 'Rook', 'Bishop', 'Knight'],
+		                    ['VampPawn', 'VampPawn', 'VampPawn', 'VampPawn']];
+        this.promotionPieces = [['Rook', 0],
+								['Knight', 0],
+								['Bishop', 0]];
+        this.derivedPieces = [['Pawn', 'VampPawn'],
+                              ['King', 'VampKing']];
+    }
 });
