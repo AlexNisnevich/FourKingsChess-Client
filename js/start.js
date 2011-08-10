@@ -5,8 +5,8 @@ var game = new Game();
 game.setup();
 game.alert('Choose countries');
 
-var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire', 'Hurons', 'Jerusalem', 'Macedonia', 'Mafia', 'Mongols', 'PapalStates', 'Sparta', 'Transylvania'];
-var countriesAncient = ['AncientGreece', 'Athens', 'Macedonia', 'Sparta'];
+var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire', 'Huns', 'Hurons', 'Jerusalem', 'Macedonia', 'Mafia', 'Mongols', 'PapalStates', 'Sparta', 'Transylvania'];
+var countriesAncient = ['AncientGreece', 'Athens', 'Huns', 'Macedonia', 'Sparta'];
 var countriesMedieval = ['Aztecs', 'ByzantineEmpire', 'Jerusalem', 'Mongols'];
 var countriesEnlightenment = ['Britain', 'Hurons', 'PapalStates'];
 var countriesModern = ['Mafia'];

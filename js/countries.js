@@ -124,6 +124,51 @@ var ByzantineEmpire = new Class({
     }
 });
 
+var Huns = new Class({
+    Extends: Player,
+
+    countryName: 'Huns',
+
+    hasUsed: false,
+
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.description = 'On each of your turns, instead of moving a piece, you may choose to place an additional pawn under your control into your 3x5 starting area. You may not use this ability two turns in a row.';
+        this.setupPieces = [['King', 'Bishop', 'Knight'],
+		                    ['Pawn', 'Pawn', 'Pawn']];
+        this.promotionPieces = [['Rook', 0],
+								['Knight', 0],
+								['Bishop', 0]];
+    },
+    startTurn: function () {
+        this.parent();
+        var player = this;
+        if (this.hasUsed == false) {
+            game.promptSimple('Select a square to place a pawn, if you wish to place a pawn instead of moving this turn.',
+				'square',
+				'confirmCancel',
+				function (square) {
+				    square = square.object;
+				    return ((square.inThreeByFive() == player.order) && !square.isOccupied());
+				},
+				function (square) {
+				    square = square.object;
+				    var pawn = AbstractFactory.create('Pawn', [square.x, square.y, player.order]);
+				    $(pawn).inject($('pieces'));
+				    
+                    player.hasUsed = true;
+				    player.endTurn();
+				},
+				true
+			);
+        }
+        else {
+            this.hasUsed = false;
+        }
+
+    }
+});
+
 var Hurons = new Class({
     Extends: Player,
 

@@ -337,10 +337,10 @@ var Game = new Class({
 			button.removeEvents('click');
 		});
 		
-		$$('#board .piece').each (function (piece) {
-			piece.removeClass('clickable');
-			piece.removeEvents('click');
-		})
+		$$('#board .piece, #board .square').each (function (item) {
+			item.removeClass('clickable');
+			item.removeEvents('click');
+		});
 		
 		if (this.onEndPrompt) {
 			var onEnd = this.onEndPrompt;
@@ -669,11 +669,17 @@ var Game = new Class({
     publishGameState: function() {
         if (local) return;
 
-        new Request.HTML({
-            url: baseUrl + 'Game/SaveState/'
-        }).post('id=' + gameId 
-            + '&state=' + JSON.stringify(this.export())
-            + '&turn=' + this.turnNum);
+        var publishRequest = new Request({
+            url: baseUrl + 'Game/SaveState/',
+            data: 'id=' + gameId 
+                + '&state=' + JSON.stringify(this.export())
+                + '&turn=' + this.turnNum,
+            onSuccess: function (txt) {
+                numState++;
+            }
+        });
+
+        publishRequest.send();
     },
 
     /*
@@ -691,7 +697,7 @@ var Game = new Class({
                 + '&num_chats=' + $$('#messages .msg').length,
             onSuccess: function (txt) {
                 var data = JSON.parse(txt);
-                var numState = data.num;
+                numState = data.num;
                 if (data.state) {
                     game.import(data.state);
                     game.tabNotification('movesTab');
