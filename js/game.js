@@ -87,7 +87,9 @@ var Game = new Class({
 	turnNum: 1, // current turn number
 	movable: false, // can pieces be moved?
 	
+	//
 	// SETUP
+	//
 	
 	initialize: function() {
 		
@@ -140,13 +142,15 @@ var Game = new Class({
 		$$('.description').dispose();
         this.players.each( function(player) {
             var description = new Element('div.description');
-            description.innerHTML = '<span class="countryName ' + player.color +'">' + player.countryName + ':</span> ' + player.description;
+            description.innerHTML = '<span class="countryName ' + player.color +'">' + player.countryDisplayName + ':</span> ' + player.description;
             description.inject($('descriptions'));
         });
     },
 	
-	// turns and players
-	
+    //
+	// TURNS AND PLAYERS
+	//
+    
 	/*
 	 * @params: i = player number
 	 * @return a Player given their number
@@ -222,6 +226,51 @@ var Game = new Class({
     nextTurn: function() {
     	this.turnNum++;
     	this.turnStart();
+    },
+    
+    //
+    // $$ WRAPPERS
+    //
+    
+    /*
+     * @return array of all squares on the board
+     */
+    getSquares: function() {
+    	return $$('#board .square').map (function(square) {
+    		return square.object;
+    	});
+    },
+    
+    /*
+     * @params: x, y - square coordinates
+     * @return square at the given coordinates
+     */
+    getSquare: function(x, y) {
+    	return this.getSquares().filter( function(square) {
+    		return (square.x == x && square.y == y);
+    	})[0];
+    },
+    
+    /*
+     * @params: players - null or Player or array of Players
+     * 			pieceClass - null or string
+     * 			royal - null or 0: all pieces
+     * 					1: only royal
+     * 					-1: only non-royal
+     * @return all Pieces on the board matching the criteria
+     */
+    getPieces: function(players, pieceClass, royal) {
+    	return $$('#board .piece').map (function(piece) {
+    		return piece.object;
+    	}).filter( function(piece) {
+    		if (players && $type(players) != 'array') {
+    			players = [players];
+    		}
+    		
+    		return (!players || players.contains(piece.getOwner())) &&
+    			   (!pieceClass || piece.pieceClass == pieceClass) &&
+    			   (!royal || (royal == 1 && piece.isRoyal()) || (royal == -1 && !piece.isRoyal()));
+    	});
     },
     
     //
@@ -366,14 +415,16 @@ var Game = new Class({
 		this.clearStatus(); // first, clear existing alert
 		
 		if (this.players.filter(function (player) {
-			return ($$('#board .royal.' + player.color).length != 0)
+			return (player.getPieces(null, 1).length != 0);
 		}).length == 1) {
 			game.gameOver($$('#board .royal')[0].object.getOwner());
 			suffix = '##';
 		} else {
 			this.players.each(function(player) {			
-				var defeated = ($$('#board .royal.' + player.color).length == 0);
-				var check = $$('#board .royal.' + player.color).every(function (royalPiece) { return royalPiece.object.inCheck(); });
+				var defeated = (player.getPieces().length <= 1);
+				var check = player.getPieces(null, 1).some(function (royalPiece) {
+					return royalPiece.inCheck();
+				});
 				
 				if (defeated) {
 					if (player.inGame) {
@@ -394,7 +445,7 @@ var Game = new Class({
         if (checked.length > 0) {
             var checkAlert = 'Check on';
             checked.each(function (player) {
-                checkAlert += ' <span class="' + player.color + '">' + player.countryName + '</span>,';
+                checkAlert += ' <span class="' + player.color + '">' + player.countryDisplayName + '</span>,';
             });
             checkAlert = checkAlert.substring(0, checkAlert.length-1) + '!'; // (removing last comma)
             this.alert(checkAlert);
@@ -408,15 +459,14 @@ var Game = new Class({
 	 * Displays victory status
 	 */
 	gameOver: function(winner) {
-		$$('#board .piece').each(function(pieceEl) {
-            piece = pieceEl.object;
+		this.getPieces().each(function(piece) {
             if (piece.getOwner() != winner) {
                 piece = piece.transferPossession(winner);
             }
 			piece.drag.detach();
 		});
 		
-		var outcomeText = winner.countryName + ' wins.';
+		var outcomeText = winner.countryDisplayName + ' wins.';
 
 		var outcome = $('outcome');
 		outcome.innerHTML = outcomeText;
@@ -502,8 +552,8 @@ var Game = new Class({
 				return player.export();
 			}),
 			board: {
-				pieces: $$('#board .piece').map(function(piece) {
-					return piece.object.export();
+				pieces: this.getPieces().map(function(piece) {
+					return piece.export();
 				})
 			},
 			graveyard: $$('#graveyard .piece').map(function(piece) {
@@ -637,13 +687,13 @@ var Game = new Class({
 			players.each(function (playerData) {
 				if (playerData.user == me) {
 					if (playerData.country != '') {
-						$$('#board .piece').dispose();
+						game.getPieces().dispose();
                         game.players = [];
                         game.addPlayer(playerData.country, 'white');
                         game.displayDescriptions();
 
                         // remove direction marks from pawns
-                        $$('#board .piece').each(function (piece) {
+                        game.getPieces().each(function (piece) {
                             piece.setProperty('src', baseUrl + 'images/pieces/' + piece.object.pieceName + '_white.png');
                         });
 					}
@@ -718,18 +768,18 @@ var Game = new Class({
      */
     displayLastMove: function(lastMove, animate) {
         if (lastMove) {
-            $$('#board .square').each(function (square) {
-                if ((square.object.x == lastMove[0][0] && square.object.y == lastMove[0][1]) ||
-                    (square.object.x == lastMove[1][0] && square.object.y == lastMove[1][1])) {
-                        square.addClass('hoverLast');
+            this.getSquares().each(function (square) {
+                if ((square.x == lastMove[0][0] && square.y == lastMove[0][1]) ||
+                    (square.x == lastMove[1][0] && square.y == lastMove[1][1])) {
+                        square.element.addClass('hoverLast');
                 } else {
-                    square.removeClass('hoverLast');
+                    square.element.removeClass('hoverLast');
                 }
             });
             
             // animate move
             if (animate) {
-	            var dest = new Square(lastMove[0][0], lastMove[0][1]);
+	            var dest = game.getSquare(lastMove[0][0], lastMove[0][1]);
 	            var piece = dest.getPiece();
 	            dest = $(piece.getSquare());
 	            piece.x = lastMove[1][0]; piece.y = lastMove[1][1];
@@ -785,7 +835,7 @@ var Game = new Class({
 
                 if (playerObj.length > 0) {
                     color = playerObj[0].color;
-                    country = playerObj[0].countryName;
+                    country = playerObj[0].countryDisplayName;
                 }
 
                 var msgHtml = '<span class="name ' + color + '">' + msg[0] + ' (' + country + ') :</span> ' + msg[1];
@@ -814,6 +864,8 @@ var Player = new Class({
     color: '', // color of the player's pieces
     description: '', // country description text
     userName: '', // who is playing as this country?
+    countryName: '', // class name of the country
+    countryDisplayName: '', // display name of the country
 
     check: false, // is the player currently in check?
     inGame: true, // is the player currently in the game?
@@ -833,6 +885,10 @@ var Player = new Class({
     initialize: function(order, color) {
         this.order = order;
         this.color = color;
+        
+        if (!this.countryDisplayName) {
+        	this.countryDisplayName = this.countryName;
+        }
     },
     
     /*
@@ -888,8 +944,8 @@ var Player = new Class({
     	
     	// transfer possession
     	
-    	$$('#board .piece.' + this.color).each(function (piece) {
-    		piece.object.transferPossession(defeatingPlayer);
+    	game.getPieces(this).each(function (piece) {
+    		piece.transferPossession(defeatingPlayer);
     	});
     	
     	// merge promotionPieces
@@ -917,7 +973,7 @@ var Player = new Class({
     	
     	// alert
     	
-    	game.alert('<span class="' + this.color + '">' + this.countryName + '</span> has been defeated.');
+    	game.alert('<span class="' + this.color + '">' + this.countryDisplayName + '</span> has been defeated.');
     },
     
     /*
@@ -939,7 +995,7 @@ var Player = new Class({
     	
     	// Update "to move"
     	var toMove = $('toMove');
-    	toMove.innerHTML = this.countryName + ' to move.';
+    	toMove.innerHTML = this.countryDisplayName + ' to move.';
     	toMove.erase("class");
     	toMove.addClass(this.color);
     },
@@ -982,14 +1038,23 @@ var Player = new Class({
     },
     
     /*
+     * @params: pieceClass - null or string
+     * 			royal - null or 0: all pieces
+     * 					1: only royal
+     * 					-1: only non-royal
+     * @return all Pieces on the board matching the criteria
+     */
+    getPieces: function(pieceClass, royal) {
+    	return game.getPieces(this, pieceClass, royal);
+    },
+    
+    /*
      * @params: pieceName = class of piece
      * @return the number of pieces of the given class this player currently
      * has on the board
      */
     countPieces: function(pieceName) {
-    	return $$('#board .' + this.color).filter(function (piece) {
-    		return (piece.object.pieceName == pieceName);
-    	}).length;
+    	return game.getPieces(this, pieceName).length;
     },
     
     /*
@@ -1090,16 +1155,12 @@ var Square = new Class({
     getPiece: function() {
         var square = this;
         var occupied = null;
-        $$('#board .piece').each(function(piece) {
-            if (piece.object.x == square.x && piece.object.y == square.y) {
+        game.getPieces().each(function(piece) {
+            if (piece.x == square.x && piece.y == square.y) {
                 occupied = piece;
             }
         });
-        if (occupied) {
-            return occupied.object;
-        } else {
-            return null;
-        }
+        return occupied;
     },
     
     /*
@@ -1109,8 +1170,8 @@ var Square = new Class({
     getAdjacentSquare: function(xOffset, yOffset) {
     	var currentSquare = this;
     	var adjacent = null;
-    	$$('#board .square').each(function(square) {
-			if (square.object.x == currentSquare.x + xOffset && square.object.y == currentSquare.y + yOffset) {
+    	game.getSquares().each(function(square) {
+			if (square.x == currentSquare.x + xOffset && square.y == currentSquare.y + yOffset) {
 				adjacent = square;
 			}
         });
@@ -1129,16 +1190,16 @@ var Square = new Class({
      */
     isOccupied: function(side) {
         var square = this;
-        var query = '#board .piece';
+        var player = null;
         
         if (!isNaN(side)) {
-        	query += '.' + game.getPlayer(side).color;
+        	player = game.getPlayer(side);
         } else if (side) {
-        	query += '.' + side.color;
+        	player = side;
         }
 
-        return $$(query).some(function(piece) {
-            return piece.object.x == square.x && piece.object.y == square.y;
+        return game.getPieces(player).some(function(piece) {
+            return piece.x == square.x && piece.y == square.y;
         });
     },
 
@@ -1155,7 +1216,7 @@ var Square = new Class({
             var minX = Math.min(this.x + 1, dest.x);
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
-                var square = new Square(i, this.y);
+                var square = game.getSquare(i, this.y);
                 if (square.isOccupied(side) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
@@ -1166,7 +1227,7 @@ var Square = new Class({
             var minY = Math.min(this.y + 1, dest.y);
             var maxY = Math.max(this.y - 1, dest.y);
             for (var j = minY; j <= maxY; j++) {
-                var square = new Square(this.x, j);
+                var square = game.getSquare(this.x, j);
                 if (square.isOccupied(side) ||
                 		(((j != maxY && j > this.y) || (j != minY && j < this.y)) && square.isOccupied())) {
                     return true;
@@ -1177,7 +1238,7 @@ var Square = new Class({
             var minX = Math.min(this.x + 1, dest.x);
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
-                var square = new Square(i, this.y - this.x + i);
+                var square = game.getSquare(i, this.y - this.x + i);
                 if (square.isOccupied(side) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
@@ -1188,7 +1249,7 @@ var Square = new Class({
             var minX = Math.min(this.x + 1, dest.x);
             var maxX = Math.max(this.x - 1, dest.x);
             for (var i = minX; i <= maxX; i++) {
-                var square = new Square(i, this.y + this.x - i);
+                var square = game.getSquare(i, this.y + this.x - i);
                 if (square.isOccupied(side) ||
                 		(((i != maxX && i > this.x) || (i != minX && i < this.x)) && square.isOccupied())) {
                     return true;
@@ -1200,24 +1261,15 @@ var Square = new Class({
     },
     
     /*
-     * @params: sides = Players to check
+     * @params: players = Players to check
      * @return: whether this square is being threatened by a piece belonging to
      * any of the given players
      */
-    isThreatenedBy: function(sides) {
+    isThreatenedBy: function(players) {
     	var square = this;
-    	var isThreatened = false;
-    	
-    	Array.from(sides).each( function (side) {
-	    	if ($$('#board .piece.' + side.color).some (function (piece) {
-				return piece.object.canMove(square);
-			})) {
-	    		isThreatened = true;
-	    	}
+    	return game.getPieces(players).some( function (piece) {
+    		piece.canMove(square);
     	});
-		
-		this.assumeOccupied = false;
-		return isThreatened;
     },
 
     /*
@@ -1246,13 +1298,13 @@ var Square = new Class({
     isPawnDoubleMove: function(dest, dir) {
     	switch (dir) {
     	case 0:
-    		return (this.y == 2 && dest.y == 4 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 3)).isOccupied());
+    		return (this.y == 2 && dest.y == 4 && dest.x == this.x && !dest.isOccupied() && !(game.getSquare(this.x, 3)).isOccupied());
     	case 1:
-    		return (this.x == 2 && dest.x == 4 && dest.y == this.y && !dest.isOccupied() && !(new Square(3, this.y)).isOccupied());
+    		return (this.x == 2 && dest.x == 4 && dest.y == this.y && !dest.isOccupied() && !(game.getSquare(3, this.y)).isOccupied());
     	case 2:
-    		return (this.y == 7 && dest.y == 5 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 6)).isOccupied());
+    		return (this.y == 7 && dest.y == 5 && dest.x == this.x && !dest.isOccupied() && !(game.getSquare(this.x, 6)).isOccupied());
     	case 3:
-    		return (this.x == 7 && dest.x == 5 && dest.y == this.y && !dest.isOccupied() && !(new Square(6, this.y)).isOccupied());
+    		return (this.x == 7 && dest.x == 5 && dest.y == this.y && !dest.isOccupied() && !(game.getSquare(6, this.y)).isOccupied());
     	}
     },
 
@@ -1576,10 +1628,7 @@ var Piece = new Class({
      * @return the square this piece is in
      */
     getSquare: function() {
-    	var x = this.x; var y = this.y;
-    	return $$('#board .square').filter(function (square) {
-    		return (square.object.x == x && square.object.y == y);
-    	})[0].object;
+    	return game.getSquare(this.x, this.y);
     },
     
     /*
@@ -1612,9 +1661,8 @@ var Piece = new Class({
     	this.x = square.x; this.y = square.y;
     		
     	var result = game.players.some(function (player) {
-    		return $$('#board .royal.' + player.color).length == 1 && 
-    			   $$('#board .royal.' + player.color).some(function(royalPiece) {
-    			return piece.canMove(royalPiece.object.getSquare());
+    		return player.getPieces(null, 1).some(function(royalPiece) {
+    			return piece.canMove(royalPiece.getSquare());
     		});
     	});
     	

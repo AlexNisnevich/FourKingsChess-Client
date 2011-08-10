@@ -107,6 +107,7 @@ var ByzantineEmpire = new Class({
     Extends: Player,
 
     countryName: 'ByzantineEmpire',
+    countryDisplayName: 'Byzantine Empire',
 
     initialize: function (order, color) {
         this.parent(order, color);
@@ -205,7 +206,7 @@ var Jerusalem = new Class({
     startTurn: function () {
         this.parent();
 
-        $$('#board .piece.' + this.color).each(function (piece) {
+        this.getPieces().each(function (piece) {
             piece.object.specialProperties.castle = false;
             piece.removeClass('castle');
         });
@@ -237,7 +238,7 @@ var Jerusalem = new Class({
     },
 
     afterImport: function () {
-        $$('#board .piece.' + this.color).each(function (piece) {
+        this.getPieces().each(function (piece) {
             if (piece.object.specialProperties.castle) {
                 piece.addClass('castle');
             }
@@ -262,10 +263,11 @@ var Macedonia = new Class({
     }
 });
 
-var Mafia = new Class({
+var MedievalBritain = new Class({
 	Extends: Player,
 	
-	countryName: 'Mafia',
+	countryName: 'MedievalBritain',
+    countryDisplayName: 'Medieval Britain',
 	
 	initialize: function (order, color) {
 	    this.parent(order, color);
@@ -304,6 +306,7 @@ var PapalStates = new Class({
 	Extends: Player,
 	
 	countryName: 'PapalStates',
+    countryDisplayName: 'Papal States',
 	
 	initialize: function (order, color) {
 	    this.parent(order, color);

@@ -5,11 +5,14 @@ var game = new Game();
 game.setup();
 game.alert('Choose countries');
 
-var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire', 'Huns', 'Hurons', 'Jerusalem', 'Macedonia', 'Mafia', 'Mongols', 'PapalStates', 'Sparta', 'Transylvania'];
+setInterval(function () { game.pollGameState(); }, 2500);
+
+var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire', 
+                 'Huns', 'Hurons', 'Jerusalem', 'Macedonia', 'MedievalBritain', 
+                 'Mongols', 'PapalStates', 'Sparta', 'Transylvania'];
 var countriesAncient = ['AncientGreece', 'Athens', 'Huns', 'Macedonia', 'Sparta'];
-var countriesMedieval = ['Aztecs', 'ByzantineEmpire', 'Jerusalem', 'Mongols'];
+var countriesMedieval = ['Aztecs', 'ByzantineEmpire', 'Jerusalem', 'MedievalBritain', 'Mongols'];
 var countriesEnlightenment = ['Britain', 'Hurons', 'PapalStates'];
-var countriesModern = ['Mafia'];
 var countriesFantasy = ['Transylvania'];
 
 $$('#setup select').each(function(dropdown) {
@@ -22,7 +25,7 @@ $$('#setup select').each(function(dropdown) {
 	countries.each(function (countryName) {
 		var newOption = new Element('option', {
             'value': countryName,
-            html: countryName
+            html: getDisplayName(countryName)
         });
 		newOption.inject(dropdown);
 	});
@@ -93,4 +96,7 @@ tabBox.addEvent('change', function () {
     }
 });
 
-setInterval(function () { game.pollGameState(); }, 2500);
+function getDisplayName(countryName) {
+	var country = AbstractFactory.create(countryName, [null, null]);
+	return country.countryDisplayName;
+}
