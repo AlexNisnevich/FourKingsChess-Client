@@ -1,137 +1,137 @@
 // BASE PIECES
 
 var Pawn = new Class({
-    Extends: Piece,
+	Extends: Piece,
 
-    pieceClass: 'Pawn',
-    pieceName: 'Pawn',
-    pieceChar: '',
-    direction: null,
-    
-    initialize: function (x, y, side) {
+	pieceClass: 'Pawn',
+	pieceName: 'Pawn',
+	pieceChar: '',
+	direction: null,
+	
+	initialize: function (x, y, side) {
 		this.direction = side;
 		this.parent(x, y, side);
 	},
 	
 	setImage: function() {
-        this.element.addClass(this.color);
-        this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png');
-    },
-    
-    canMove: function(square) {
-    	return (this.getSquare().isPawnMove(square, this.direction) || 
-    			this.getSquare().isPawnCapture(square, this.direction, this.side) ||
-    			this.getSquare().isPawnDoubleMove(square, this.direction, this.side));
-    },
+		this.element.addClass(this.color);
+		this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png');
+	},
+	
+	canMove: function(square) {
+		return (this.getSquare().isPawnMove(square, this.direction) || 
+				this.getSquare().isPawnCapture(square, this.direction, this.side) ||
+				this.getSquare().isPawnDoubleMove(square, this.direction, this.side));
+	},
 
 	afterMove: function() {
-    	if (((this.direction == 0 && this.y == 8) ||
-    		(this.direction == 1 && this.x == 8) ||
-    		(this.direction == 2 && this.y == 1) ||
-    		(this.direction == 3 && this.x == 1)) &&
-    			(this.getOwner().promotionPieces.length != 0)) {
-    				this.promote();
-    	}
-    },
-    
-    transform: function(pieceName) {
-    	newPiece = this.parent(pieceName);
-    	
-    	newPiece.direction = this.direction;
-    	newPiece.setImage();
-    	
-    	return newPiece;
-    },
-    
-    promote: function() {
-        var pawn = this;
-        var owner = pawn.getOwner();
-    	
-        new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
-        
-        owner.promotionPieces.each(function(promotionPiece) {
-        	var pieceName = promotionPiece[0];
-        	var pieceLimit = promotionPiece[1];
-        	
-        	if (pieceLimit == 0 || owner.countPieces(pieceName) < pieceLimit) {
-        		var piece = AbstractFactory.create(pieceName, [pawn.x, pawn.y, owner.order]);
-	            piece.drag.detach();
-	            piece.element.onclick = function () {
-	                game.doPromote(piece);
-	            };
-	            piece.element.inject($('dialog'));
-        	}
-        });
-        
-        $('overlay').show();
-    },
-    
-    export: function() {
-    	var obj = this.parent();
-    	obj.props.direction = this.direction;
-    	return obj;
-    }
+		if (((this.direction == 0 && this.y == 8) ||
+			(this.direction == 1 && this.x == 8) ||
+			(this.direction == 2 && this.y == 1) ||
+			(this.direction == 3 && this.x == 1)) &&
+				(this.getOwner().promotionPieces.length != 0)) {
+					this.promote();
+		}
+	},
+	
+	transform: function(pieceName) {
+		newPiece = this.parent(pieceName);
+		
+		newPiece.direction = this.direction;
+		newPiece.setImage();
+		
+		return newPiece;
+	},
+	
+	promote: function() {
+		var pawn = this;
+		var owner = pawn.getOwner();
+		
+		new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
+		
+		owner.promotionPieces.each(function(promotionPiece) {
+			var pieceName = promotionPiece[0];
+			var pieceLimit = promotionPiece[1];
+			
+			if (pieceLimit == 0 || owner.countPieces(pieceName) < pieceLimit) {
+				var piece = AbstractFactory.create(pieceName, [pawn.x, pawn.y, owner.order]);
+				piece.drag.detach();
+				piece.element.onclick = function () {
+					game.doPromote(piece);
+				};
+				piece.element.inject($('dialog'));
+			}
+		});
+		
+		$('overlay').show();
+	},
+	
+	export: function() {
+		var obj = this.parent();
+		obj.props.direction = this.direction;
+		return obj;
+	}
 });
 
 var Knight = new Class({
 	Extends: Piece,
 
-    pieceClass: 'Knight',
-    pieceName: 'Knight',
-    pieceChar: 'N',
+	pieceClass: 'Knight',
+	pieceName: 'Knight',
+	pieceChar: 'N',
 
-    canMove: function(square) {
-        return this.getSquare().isKnightMove(square, this.side);
-    }
+	canMove: function(square) {
+		return this.getSquare().isKnightMove(square, this.side);
+	}
 });
 
 var Bishop = new Class({
 	Extends: Piece,
 
-    pieceClass: 'Bishop',
-    pieceName: 'Bishop',
-    pieceChar: 'B',
+	pieceClass: 'Bishop',
+	pieceName: 'Bishop',
+	pieceChar: 'B',
 
-    canMove: function(square) {
-        return this.getSquare().isBishopMove(square, this.side);
-    }
+	canMove: function(square) {
+		return this.getSquare().isBishopMove(square, this.side);
+	}
 });
 
 var Rook = new Class({
 	Extends: Piece,
 
-    pieceClass: 'Rook',
-    pieceName: 'Rook',
-    pieceChar: 'R',
+	pieceClass: 'Rook',
+	pieceName: 'Rook',
+	pieceChar: 'R',
 
-    canMove: function(square) {
-        return this.getSquare().isRookMove(square, this.side);
-    }
+	canMove: function(square) {
+		return this.getSquare().isRookMove(square, this.side);
+	}
 });
 
 var Queen = new Class({
 	Extends: Piece,
 
-    pieceClass: 'Queen',
-    pieceName: 'Queen',
-    pieceChar: 'Q',
+	pieceClass: 'Queen',
+	pieceName: 'Queen',
+	pieceChar: 'Q',
 
-    canMove: function(square) {
-        return (this.getSquare().isBishopMove(square, this.side) || this.getSquare().isRookMove(square, this.side));
-    }
+	canMove: function(square) {
+		return (this.getSquare().isBishopMove(square, this.side) || this.getSquare().isRookMove(square, this.side));
+	}
 });
 
 var King = new Class({
 	Extends: Piece,
 
-    pieceClass: 'King',
-    pieceName: 'King',
-    pieceChar: 'K',
-    royal: true,
+	pieceClass: 'King',
+	pieceName: 'King',
+	pieceChar: 'K',
+	royal: true,
 
-    canMove: function(square) {
-        return (this.getSquare().isKingMove(square, this.side));
-    }
+	canMove: function(square) {
+		return (this.getSquare().isKingMove(square, this.side));
+	}
 });
 
 // SPECIAL PIECES
@@ -141,7 +141,7 @@ var King = new Class({
 var Minister = new Class({
 	Extends: Piece,
 	
-    pieceClass: 'Minister',
+	pieceClass: 'Minister',
 	pieceName: 'Minister',
 	pieceChar: 'M',
 	royal: true,
@@ -165,7 +165,7 @@ var Minister = new Class({
 var SpartaWarrior = new Class({
 	Extends: Piece,
 	
-    pieceClass: 'SpartaWarrior',
+	pieceClass: 'SpartaWarrior',
 	pieceName: 'SpartaWarrior',
 	pieceChar: 'W',
 	
@@ -188,9 +188,9 @@ var SpartaWarrior = new Class({
 var AthensBishop = new Class({
 	Extends: Bishop,
 	
-    pieceClass: 'AthensBishop',
+	pieceClass: 'AthensBishop',
 
-    canMove: function(square) {
+	canMove: function(square) {
 		if (this.parent(square)) {
 			this.moveType = 'normal';
 		} else if (!square.isOccupied() && !this.isMoveCheck(square) && 
@@ -213,58 +213,58 @@ var AthensBishop = new Class({
 // Byzantine Empire
 
 var ByzantineNonPawn = new Class({
-    byzantineRetreat: function (dest, side) {
-        if ((dest.inTwoByFour() == side) && ((!(this.getSquare().inThreeByFive() == side) && !dest.isOccupied(side)) || !dest.isOccupied())) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
+	byzantineRetreat: function (dest, side) {
+		if ((dest.inTwoByFour() == side) && ((!(this.getSquare().inThreeByFive() == side) && !dest.isOccupied(side)) || !dest.isOccupied())) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
 });
 
 var ByzantineKnight = new Class({
-    Extends: Knight,
-    Implements: ByzantineNonPawn,
+	Extends: Knight,
+	Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineKnight',
+	pieceClass: 'ByzantineKnight',
 
-    canMove: function (square) {
-        return (this.parent(square) || this.byzantineRetreat(square, this.side));
-    }
+	canMove: function (square) {
+		return (this.parent(square) || this.byzantineRetreat(square, this.side));
+	}
 });
 
 var ByzantineRook = new Class({
-    Extends: Rook,
-    Implements: ByzantineNonPawn,
+	Extends: Rook,
+	Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineRook',
+	pieceClass: 'ByzantineRook',
 
-    canMove: function (square) {
-        return (this.parent(square) || this.byzantineRetreat(square, this.side));
-    }
+	canMove: function (square) {
+		return (this.parent(square) || this.byzantineRetreat(square, this.side));
+	}
 });
 
 var ByzantineKing = new Class({
-    Extends: King,
-    Implements: ByzantineNonPawn,
+	Extends: King,
+	Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineKing',
+	pieceClass: 'ByzantineKing',
 
-    canMove: function (square) {
-        return (this.parent(square) || this.byzantineRetreat(square, this.side));
-    }
+	canMove: function (square) {
+		return (this.parent(square) || this.byzantineRetreat(square, this.side));
+	}
 });
 
 var ByzantineBishop = new Class({
-    Extends: Bishop,
-    Implements: ByzantineNonPawn,
+	Extends: Bishop,
+	Implements: ByzantineNonPawn,
 
-    pieceClass: 'ByzantineBishop',
+	pieceClass: 'ByzantineBishop',
 
-    canMove: function (square) {
-        return (this.parent(square) || this.byzantineRetreat(square, this.side));
-    }
+	canMove: function (square) {
+		return (this.parent(square) || this.byzantineRetreat(square, this.side));
+	}
 });
 
 // Ancient Greece
@@ -272,74 +272,74 @@ var ByzantineBishop = new Class({
 var GreecePiece = new Class({
 	greeceMove: function (square){
 		this.moveType = 'normal';
-        if (this.getSquare().inTwoByFour() == this.side) {
-            return this.getSquare().isKingMove(square, this.side);
-        }
-        else if (this.getSquare().inThreeByFive() == this.side) {
-            return this.getSquare().isBishopJump(square, this.side, 2);
-        }
-        else if (this.getSquare().inCenterTwoByTwo() == true) {
-            if (this.getSquare().isRookJump(square, this.side, 1)
-                    && square.isOccupied()
-                    && !square.isOccupied(this.side)) {
-                this.moveType = 'shoot';
-                return true;
-            }else {
-                return false;
-            }
-        }
-        else {
-            return this.parent(square);
-        }
+		if (this.getSquare().inTwoByFour() == this.side) {
+			return this.getSquare().isKingMove(square, this.side);
+		}
+		else if (this.getSquare().inThreeByFive() == this.side) {
+			return this.getSquare().isBishopJump(square, this.side, 2);
+		}
+		else if (this.getSquare().inCenterTwoByTwo() == true) {
+			if (this.getSquare().isRookJump(square, this.side, 1)
+					&& square.isOccupied()
+					&& !square.isOccupied(this.side)) {
+				this.moveType = 'shoot';
+				return true;
+			}else {
+				return false;
+			}
+		}
+		else {
+			return this.parent(square);
+		}
 	},
 	greeceHasMoved: function(){
-	    if (this.moveType == 'shoot') {
-            this.moveTo(this.lastPosition, 'normal');
-            game.getLastMoveText().appendText(' (sh)');
-        }
+		if (this.moveType == 'shoot') {
+			this.moveTo(this.lastPosition, 'normal');
+			game.getLastMoveText().appendText(' (sh)');
+		}
 	}
 });
 
 var GreeceKnight = new Class({
-    Extends: Knight,
+	Extends: Knight,
 	Implements: GreecePiece,
-    pieceClass: 'GreeceKnight',
+	pieceClass: 'GreeceKnight',
 
-    canMove: function (square) {
-        return (this.parent(square) || this.greeceMove(square));
-    },
+	canMove: function (square) {
+		return (this.parent(square) || this.greeceMove(square));
+	},
 
-    afterMove: function () {
-        this.greeceHasMoved();
-    }
+	afterMove: function () {
+		this.greeceHasMoved();
+	}
 });
 
 var GreeceBishop = new Class({
-    Extends: Bishop,
+	Extends: Bishop,
 
-    pieceClass: 'GreeceBishop',
+	pieceClass: 'GreeceBishop',
 	Implements: GreecePiece,
-    canMove: function (square) {
-        return (this.parent(square) || this.greeceMove(square));
-    },
+	canMove: function (square) {
+		return (this.parent(square) || this.greeceMove(square));
+	},
 
-    afterMove: function () {
-        this.greeceHasMoved();
-    }
+	afterMove: function () {
+		this.greeceHasMoved();
+	}
 });
 
 var GreeceRook = new Class({
-    Extends: Rook,
+	Extends: Rook,
 	Implements: GreecePiece,
-    pieceClass: 'GreeceRook',
+	pieceClass: 'GreeceRook',
 
-    canMove: function (square) {
+	canMove: function (square) {
 		return (this.parent(square) || this.greeceMove(square));
-    },
+	},
 
-    afterMove: function () {
-        this.greeceHasMoved();
-    }
+	afterMove: function () {
+		this.greeceHasMoved();
+	}
 });
 
 // Hurons
@@ -347,36 +347,36 @@ var GreeceRook = new Class({
 var HuronBishop = new Class({
 	Extends: Bishop,
 
-    pieceClass: 'HuronBishop',
+	pieceClass: 'HuronBishop',
 
-    canMove: function(square) {
+	canMove: function(square) {
 	return (this.parent(square) || 
-        this.getSquare().isBishopJump(square, this.side, 2));
-    }
+		this.getSquare().isBishopJump(square, this.side, 2));
+	}
 });
 
 var HuronRook = new Class({
 	Extends: Rook,
 
-    pieceClass: 'HuronRook',
+	pieceClass: 'HuronRook',
 
-    canMove: function(square) {
+	canMove: function(square) {
 	return (this.parent(square) || 
-        this.getSquare().isRookJump(square, this.side, 2));
-    }
+		this.getSquare().isRookJump(square, this.side, 2));
+	}
 });
 
 var HuronKing = new Class({
-    Extends: King,
+	Extends: King,
 
-    pieceClass: 'HuronKing',
+	pieceClass: 'HuronKing',
 
-    canMove: function (square) {
-        return (this.parent(square) || this.isKingJumpMove(this.getSquare(), square, this.side));
-    },
+	canMove: function (square) {
+		return (this.parent(square) || this.isKingJumpMove(this.getSquare(), square, this.side));
+	},
 
-    isKingJumpMove: function (start, dest, side) {
-        return !dest.isOccupied(side) &&
+	isKingJumpMove: function (start, dest, side) {
+		return !dest.isOccupied(side) &&
 		(((new Square(start.x + 1, start.y).isOccupied()) && (dest.x == (start.x + 2)) && dest.y == start.y)
 		|| ((new Square(start.x - 1, start.y).isOccupied()) && (dest.x == (start.x - 2)) && dest.y == start.y)
 		|| ((new Square(start.x, start.y + 1).isOccupied()) && (dest.x == (start.x)) && (dest.y == start.y + 2))
@@ -385,111 +385,111 @@ var HuronKing = new Class({
 		|| ((new Square(start.x - 1, start.y + 1).isOccupied()) && (dest.x == (start.x - 2)) && (dest.y == start.y + 2))
 		|| ((new Square(start.x - 1, start.y - 1).isOccupied()) && (dest.x == (start.x - 2)) && (dest.y == start.y - 2))
 		|| ((new Square(start.x + 1, start.y - 1).isOccupied()) && (dest.x == (start.x + 2)) && (dest.y == start.y - 2)));
-    }
+	}
 });
 
 var HuronPawn = new Class({
-    Extends: Pawn,
+	Extends: Pawn,
 
-    pieceClass: 'HuronPawn',
+	pieceClass: 'HuronPawn',
 
-    canMove: function (square) {
-        return (this.parent(square) ||
-	            this.isPawnJumpMove(this.getSquare(), square, this.direction) ||
-	            this.isPawnJumpCapture(this.getSquare(), square, this.direction, this.side));
-    },
+	canMove: function (square) {
+		return (this.parent(square) ||
+				this.isPawnJumpMove(this.getSquare(), square, this.direction) ||
+				this.isPawnJumpCapture(this.getSquare(), square, this.direction, this.side));
+	},
 
-    isPawnJumpMove: function (start, dest, dir) {
-        switch (dir) {
-            case 0:
-                return (!dest.isOccupied() && (new Square(start.x, start.y + 1).isOccupied()) && dest.x == start.x && dest.y == start.y + 2);
-            case 1:
-                return (!dest.isOccupied() && (new Square(start.x + 1, start.y).isOccupied()) && dest.y == start.y && dest.x == start.x + 2);
-            case 2:
-                return (!dest.isOccupied() && (new Square(start.x, start.y - 1).isOccupied()) && dest.x == start.x && dest.y == start.y - 2);
-            case 3:
-                return (!dest.isOccupied() && (new Square(start.x - 1, start.y).isOccupied()) && dest.y == start.y && dest.x == start.x - 2);
-        }
-    },
+	isPawnJumpMove: function (start, dest, dir) {
+		switch (dir) {
+			case 0:
+				return (!dest.isOccupied() && (new Square(start.x, start.y + 1).isOccupied()) && dest.x == start.x && dest.y == start.y + 2);
+			case 1:
+				return (!dest.isOccupied() && (new Square(start.x + 1, start.y).isOccupied()) && dest.y == start.y && dest.x == start.x + 2);
+			case 2:
+				return (!dest.isOccupied() && (new Square(start.x, start.y - 1).isOccupied()) && dest.x == start.x && dest.y == start.y - 2);
+			case 3:
+				return (!dest.isOccupied() && (new Square(start.x - 1, start.y).isOccupied()) && dest.y == start.y && dest.x == start.x - 2);
+		}
+	},
 
-    isPawnJumpCapture: function (start, dest, dir, side) {
-        if (dest.isOccupied() && !dest.isOccupied(side)) {
-            switch (dir) {
-                case 0:
-                    return (((new Square(start.x + 1, start.y + 1).isOccupied() && dest.x == start.x + 2) ||
-                         (new Square(start.x - 1, start.y + 1).isOccupied() && dest.x == start.x - 2)) && dest.y == start.y + 2);
-                case 1:
-                    return (((new Square(start.x + 1, start.y + 1).isOccupied() && dest.y == start.y + 2) ||
-                         (new Square(start.x + 1, start.y - 1).isOccupied() && dest.y == start.y - 2)) && dest.x == start.x + 2);
-                case 2:
-                    return (((new Square(start.x + 1, start.y - 1).isOccupied() && dest.x == start.x + 2) ||
-                         (new Square(start.x - 1, start.y - 1).isOccupied() && dest.x == start.x - 2)) && dest.y == start.y - 2);
-                case 3:
-                    return (((new Square(start.x - 1, start.y - 1).isOccupied() && dest.y == start.y + 2) ||
-                         (new Square(start.x - 1, start.y - 1).isOccupied() && dest.y == start.y - 2)) && dest.x == start.x - 2);
-            }
-        } else {
-            return false;
-        }
-    }
+	isPawnJumpCapture: function (start, dest, dir, side) {
+		if (dest.isOccupied() && !dest.isOccupied(side)) {
+			switch (dir) {
+				case 0:
+					return (((new Square(start.x + 1, start.y + 1).isOccupied() && dest.x == start.x + 2) ||
+						 (new Square(start.x - 1, start.y + 1).isOccupied() && dest.x == start.x - 2)) && dest.y == start.y + 2);
+				case 1:
+					return (((new Square(start.x + 1, start.y + 1).isOccupied() && dest.y == start.y + 2) ||
+						 (new Square(start.x + 1, start.y - 1).isOccupied() && dest.y == start.y - 2)) && dest.x == start.x + 2);
+				case 2:
+					return (((new Square(start.x + 1, start.y - 1).isOccupied() && dest.x == start.x + 2) ||
+						 (new Square(start.x - 1, start.y - 1).isOccupied() && dest.x == start.x - 2)) && dest.y == start.y - 2);
+				case 3:
+					return (((new Square(start.x - 1, start.y - 1).isOccupied() && dest.y == start.y + 2) ||
+						 (new Square(start.x - 1, start.y - 1).isOccupied() && dest.y == start.y - 2)) && dest.x == start.x - 2);
+			}
+		} else {
+			return false;
+		}
+	}
 });
 
 // Macedonia
 
 var MacedoniaPawn = new Class({
-    Extends: Pawn,
+	Extends: Pawn,
 
-    pieceClass: 'MacedoniaPawn',
+	pieceClass: 'MacedoniaPawn',
 
-    canMove: function (square) {
-        return (this.parent(square) ||
-    			this.isPawnQuadMove(square, this.direction) ||
+	canMove: function (square) {
+		return (this.parent(square) ||
+				this.isPawnQuadMove(square, this.direction) ||
 				this.isPawnMoveTwo(square, this.direction) ||
 				this.isPawnCaptureTwo(square, this.direction, this.side));
-    },
+	},
 
-    isPawnCaptureTwo: function (dest, dir, side) {
-        if (dest.isOccupied() && !dest.isOccupied(side)) {
-            switch (dir) {
-                case 0:
-                    return (((dest.x == this.x + 2 && !(new Square(this.x + 1, this.y + 1)).isOccupied()) || (dest.x == this.x - 2 && !(new Square(this.x - 1, this.y + 1)).isOccupied())) && (dest.y == this.y + 2));
-                case 1:
-                    return (((dest.y == this.y + 2 && !(new Square(this.x + 1, this.y + 1)).isOccupied()) || (dest.y == this.y - 2 && !(new Square(this.x + 1, this.y - 1)).isOccupied())) && (dest.x == this.x + 2));
-                case 2:
-                    return (((dest.x == this.x + 2 && !(new Square(this.x + 1, this.y - 1)).isOccupied()) || (dest.x == this.x - 2 && !(new Square(this.x - 1, this.y - 1)).isOccupied())) && (dest.y == this.y - 2));
-                case 3:
-                    return (((dest.y == this.y + 2 && !(new Square(this.x - 1, this.y + 1)).isOccupied()) || (dest.y == this.y - 2 && !(new Square(this.x - 1, this.y - 1)).isOccupied())) && (dest.x == this.x - 2));
-            }
-        } else {
-            return false;
-        }
-    },
+	isPawnCaptureTwo: function (dest, dir, side) {
+		if (dest.isOccupied() && !dest.isOccupied(side)) {
+			switch (dir) {
+				case 0:
+					return (((dest.x == this.x + 2 && !(new Square(this.x + 1, this.y + 1)).isOccupied()) || (dest.x == this.x - 2 && !(new Square(this.x - 1, this.y + 1)).isOccupied())) && (dest.y == this.y + 2));
+				case 1:
+					return (((dest.y == this.y + 2 && !(new Square(this.x + 1, this.y + 1)).isOccupied()) || (dest.y == this.y - 2 && !(new Square(this.x + 1, this.y - 1)).isOccupied())) && (dest.x == this.x + 2));
+				case 2:
+					return (((dest.x == this.x + 2 && !(new Square(this.x + 1, this.y - 1)).isOccupied()) || (dest.x == this.x - 2 && !(new Square(this.x - 1, this.y - 1)).isOccupied())) && (dest.y == this.y - 2));
+				case 3:
+					return (((dest.y == this.y + 2 && !(new Square(this.x - 1, this.y + 1)).isOccupied()) || (dest.y == this.y - 2 && !(new Square(this.x - 1, this.y - 1)).isOccupied())) && (dest.x == this.x - 2));
+			}
+		} else {
+			return false;
+		}
+	},
 
-    isPawnMoveTwo: function (dest, dir) {
-        switch (dir) {
-            case 0:
-                return ((this.y + 2 == dest.y) && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, this.y + 1)).isOccupied());
-            case 1:
-                return ((this.x + 2 == dest.x) && dest.y == this.y && !dest.isOccupied() && !(new Square(this.x + 1, this.y)).isOccupied());
-            case 2:
-                return ((this.y - 2 == dest.y) && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, this.y - 1)).isOccupied());
-            case 3:
-                return ((this.x - 2 == dest.x) && dest.y == this.y && !dest.isOccupied() && !(new Square(this.x - 1, this.y)).isOccupied());
-        }
-    },
+	isPawnMoveTwo: function (dest, dir) {
+		switch (dir) {
+			case 0:
+				return ((this.y + 2 == dest.y) && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, this.y + 1)).isOccupied());
+			case 1:
+				return ((this.x + 2 == dest.x) && dest.y == this.y && !dest.isOccupied() && !(new Square(this.x + 1, this.y)).isOccupied());
+			case 2:
+				return ((this.y - 2 == dest.y) && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, this.y - 1)).isOccupied());
+			case 3:
+				return ((this.x - 2 == dest.x) && dest.y == this.y && !dest.isOccupied() && !(new Square(this.x - 1, this.y)).isOccupied());
+		}
+	},
 
-    isPawnQuadMove: function (dest, dir) {
-        switch (dir) {
-            case 0:
-                return (this.y == 2 && dest.y == 6 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 3)).isOccupied() && !(new Square(this.x, 4)).isOccupied() && !(new Square(this.x, 5)).isOccupied());
-            case 1:
-                return (this.x == 2 && dest.x == 6 && dest.y == this.y && !dest.isOccupied() && !(new Square(3, this.y)).isOccupied() && !(new Square(4, this.y)).isOccupied() && !(new Square(5, this.y)).isOccupied());
-            case 2:
-                return (this.y == 7 && dest.y == 3 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 6)).isOccupied() && !(new Square(this.x, 5)).isOccupied() && !(new Square(this.x, 4)).isOccupied());
-            case 3:
-                return (this.x == 7 && dest.x == 3 && dest.y == this.y && !dest.isOccupied() && !(new Square(6, this.y)).isOccupied() && !(new Square(5, this.y)).isOccupied() && !(new Square(4, this.y)).isOccupied());
-        }
-    }
+	isPawnQuadMove: function (dest, dir) {
+		switch (dir) {
+			case 0:
+				return (this.y == 2 && dest.y == 6 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 3)).isOccupied() && !(new Square(this.x, 4)).isOccupied() && !(new Square(this.x, 5)).isOccupied());
+			case 1:
+				return (this.x == 2 && dest.x == 6 && dest.y == this.y && !dest.isOccupied() && !(new Square(3, this.y)).isOccupied() && !(new Square(4, this.y)).isOccupied() && !(new Square(5, this.y)).isOccupied());
+			case 2:
+				return (this.y == 7 && dest.y == 3 && dest.x == this.x && !dest.isOccupied() && !(new Square(this.x, 6)).isOccupied() && !(new Square(this.x, 5)).isOccupied() && !(new Square(this.x, 4)).isOccupied());
+			case 3:
+				return (this.x == 7 && dest.x == 3 && dest.y == this.y && !dest.isOccupied() && !(new Square(6, this.y)).isOccupied() && !(new Square(5, this.y)).isOccupied() && !(new Square(4, this.y)).isOccupied());
+		}
+	}
 });
 
 // Medieval Britain
@@ -566,9 +566,9 @@ var MafiaPawn = new Class ({
 var MongolPawn =  new Class({
 	Extends: Pawn,
 	
-    pieceClass: 'MongolPawn',
+	pieceClass: 'MongolPawn',
 
-    canMove: function(square) {
+	canMove: function(square) {
 		var pos = this.getSquare();
 		return ((!square.isOccupied() && 
 					((square.x == pos.x && (square.y == pos.y + 1 || square.y == pos.y - 1)) || 
@@ -579,18 +579,18 @@ var MongolPawn =  new Class({
 	},
 	
 	afterMove: function() {
-    	if ((this.side == 0 && (this.y == 8 || this.x == 8)) ||
-    		(this.side == 1 && (this.x == 8 || this.y == 1)) ||
-    		(this.side == 2 && (this.y == 1 || this.x == 1)) ||
-    		(this.side == 3 && (this.x == 1 || this.y == 8))) {
-    			this.promote();
-    	}
-    },
+		if ((this.side == 0 && (this.y == 8 || this.x == 8)) ||
+			(this.side == 1 && (this.x == 8 || this.y == 1)) ||
+			(this.side == 2 && (this.y == 1 || this.x == 1)) ||
+			(this.side == 3 && (this.x == 1 || this.y == 8))) {
+				this.promote();
+		}
+	},
 	
 	setImage: function() {
-        this.element.addClass(this.color);
-        this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
-    }
+		this.element.addClass(this.color);
+		this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
+	}
 });
 
 // Papal States
@@ -598,61 +598,61 @@ var MongolPawn =  new Class({
 var PapalBishop = new Class({
 	Extends: Bishop,
 
-    pieceClass: 'PapalBishop',
+	pieceClass: 'PapalBishop',
 
-    canMove: function(square) {
+	canMove: function(square) {
 		return (this.parent(square) || 
-        		this.getSquare().isBishopJump(square, this.side, 2));
-    },
-    
-    afterMove: function() {
-        if (this.getSquare().inTwoByFour() != -1 && this.getSquare().inTwoByFour() != this.getOwner().order) {
-        	this.transform('ArchBishop');
-        	game.getLastMoveText().appendText('=AB');
-	    };
-    }
+				this.getSquare().isBishopJump(square, this.side, 2));
+	},
+	
+	afterMove: function() {
+		if (this.getSquare().inTwoByFour() != -1 && this.getSquare().inTwoByFour() != this.getOwner().order) {
+			this.transform('ArchBishop');
+			game.getLastMoveText().appendText('=AB');
+		};
+	}
 });
 
 var ArchBishop = new Class({
 	Extends: PapalBishop,
 
-    pieceClass: 'ArchBishop',
-    pieceName: 'ArchBishop',
-    pieceChar: 'AB',
+	pieceClass: 'ArchBishop',
+	pieceName: 'ArchBishop',
+	pieceChar: 'AB',
 
-    canMove: function(square) {
+	canMove: function(square) {
 		return (this.parent(square) || 
-        		this.getSquare().isKingMove(square, this.side) ||
-        		this.getSquare().isRookJump(square, this.side, 2))
-    },
-    
-    afterMove: function() {
-    	// blank override
-    }
+				this.getSquare().isKingMove(square, this.side) ||
+				this.getSquare().isRookJump(square, this.side, 2))
+	},
+	
+	afterMove: function() {
+		// blank override
+	}
 });
 
 // Transylvania
 
 var VampKing = new Class({
-    Extends: King,
+	Extends: King,
 
-    pieceClass: 'VampKing',
+	pieceClass: 'VampKing',
 
-    canMove: function (square) {
-        return (this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2));
-    }
+	canMove: function (square) {
+		return (this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2));
+	}
 });
 
 var VampPawn = new Class({
-    Extends: Pawn,
+	Extends: Pawn,
 
-    pieceClass: 'VampPawn',
+	pieceClass: 'VampPawn',
 
-    afterMove: function () {
-        if (this.lastCapture != null) {
-            if (this.lastCapture.pieceName != 'Pawn') {
-                this.transform(this.lastCapture.pieceName);
-            }
-        }
-    }
+	afterMove: function () {
+		if (this.lastCapture != null) {
+			if (this.lastCapture.pieceName != 'Pawn') {
+				this.transform(this.lastCapture.pieceName);
+			}
+		}
+	}
 });
