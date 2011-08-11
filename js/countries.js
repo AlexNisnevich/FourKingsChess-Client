@@ -148,11 +148,9 @@ var Huns = new Class({
 				'square',
 				'confirmCancel',
 				function (square) {
-					square = square.object;
 					return ((square.inThreeByFive() == player.order) && !square.isOccupied());
 				},
 				function (square) {
-					square = square.object;
 					var pawn = AbstractFactory.create('Pawn', [square.x, square.y, player.order]);
 					$(pawn).inject($('pieces'));
 					
@@ -232,7 +230,7 @@ var Jerusalem = new Class({
 	},
 
 	capturable: function (myPiece, capturingPiece) {
-		return (!myPiece.specisalProperties.castle || capturingPiece.isRoyal());
+		return (!myPiece.specialProperties.castle || capturingPiece.isRoyal());
 	},
 
 	afterImport: function () {

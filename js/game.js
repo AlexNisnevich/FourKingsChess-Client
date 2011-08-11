@@ -128,10 +128,10 @@ var Game = new Class({
 	 * Calls the start of the first turn and the first player's move
 	 */
 	startGame: function() {
+		this.movable = true;
 		this.clearStatus();
 		this.turnStart();
 		this.playerStart();
-		this.movable = true;
 		
 		this.displayDescriptions();
 
