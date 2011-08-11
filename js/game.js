@@ -119,7 +119,7 @@ var Game = new Class({
 		var player = AbstractFactory.create(countryName, [order, color])
 		this.players.push(player);
 		player.setup();
-		$$('#moves .heading.' + color).appendText(player.countryName);
+		$$('#moves .heading.' + color).appendText(player.countryDisplayName);
 		
 		return player;
 	},
@@ -142,7 +142,7 @@ var Game = new Class({
 		$$('.description').dispose();
 		this.players.each( function(player) {
 			var description = new Element('div.description');
-			description.innerHTML = '<span class="countryName ' + player.color +'">' + player.countryDisplayName + ':</span> ' + player.description;
+			description.innerHTML = '<span class="countryName ' + player.color +'">' + player.countryDisplayName + ':</span> <span class="power">You have the ' + player.power + '</span>. ' + player.description;
 			description.inject($('descriptions'));
 		});
 	},
@@ -877,10 +877,12 @@ var Game = new Class({
 var Player = new Class({
 	order: 0, // the player's number, starting from 0
 	color: '', // color of the player's pieces
-	description: '', // country description text
+
 	userName: '', // who is playing as this country?
 	countryName: '', // class name of the country
 	countryDisplayName: '', // display name of the country
+	description: '', // country description text
+	power: '', // country power summary text
 
 	check: false, // is the player currently in check?
 	inGame: true, // is the player currently in the game?

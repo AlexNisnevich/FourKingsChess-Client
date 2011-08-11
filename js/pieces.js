@@ -531,6 +531,7 @@ var MafiaPiece = new Class ({
 		if (this.lastCapture != null){
 			this.moveTo(this.lastPosition, 'normal');
 			game.getLastMoveText().appendText(' (sh)');
+			game.lastPieceMoved = null;
 		}
 	}
 });

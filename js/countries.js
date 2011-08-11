@@ -18,6 +18,8 @@ var AncientGreece = new Class({
 	Extends: Player,
 
 	countryName: 'AncientGreece',
+	countryDisplayName: ' Ancient Greece',
+	power: 'power of city-states',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -37,6 +39,7 @@ var Athens = new Class({
 	Extends: Player,
 
 	countryName: 'Athens',
+	power: 'power of the sea',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -53,6 +56,7 @@ var Aztecs = new Class({
 	Extends: Player,
 
 	countryName: 'Aztecs',
+	power: 'power of warrior societies',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -92,6 +96,7 @@ var Britain = new Class({
 	Extends: Player,
 
 	countryName: 'Britain',
+	power: 'power of democracy',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -107,6 +112,7 @@ var ByzantineEmpire = new Class({
 
 	countryName: 'ByzantineEmpire',
 	countryDisplayName: 'Byzantine Empire',
+	power: 'power to retreat',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -128,6 +134,7 @@ var Conquistadors = new Class ({
 	Extends: Player,
 
     countryName: 'Conquistadors',
+	power: 'power of disease',
 	
 	startTurn: function(order, color){
 		var player = this;
@@ -159,6 +166,7 @@ var Huns = new Class({
 	Extends: Player,
 
 	countryName: 'Huns',
+	power: 'power of tribute',
 
 	hasUsed: false,
 
@@ -202,6 +210,7 @@ var Hurons = new Class({
 	Extends: Player,
 
 	countryName: 'Hurons',
+	power: 'power to ambush',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -220,6 +229,7 @@ var Incas = new Class ({
 	Extends: Player,
 
     countryName: 'Incas',
+	power: 'power of manipulation',
 	
 	startTurn: function(order, color){
 		var player = this;
@@ -246,6 +256,7 @@ var Jerusalem = new Class({
 	Extends: Player,
 
 	countryName: 'Jerusalem',
+	power: 'power of castles',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -303,10 +314,11 @@ var Macedonia = new Class({
 	Extends: Player,
 
 	countryName: 'Macedonia',
+	power: 'power to advance',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.description = 'Your pawns can also move or capture twice as far away as a normal pawn (that is, they can move always move one or two squares forward, can move two or four squares forward when on the second row, and can capture one or two squares diagonally), and can promote to a rook, bishop, or queen. You can only have one queen in play at a time.';
+		this.description = 'Your pawns can also move or capture twice as far away as a normal pawn (that is, they can always move one or two squares forward, can move two or four squares forward when on the second row, and can capture one or two squares diagonally), and can promote to a rook, bishop, or queen. You can only have one queen in play at a time.';
 		this.setupPieces = [['King', 'Rook', 'Bishop', 'MacedoniaPawn'],
 							['MacedoniaPawn', 'MacedoniaPawn', 'MacedoniaPawn', 'MacedoniaPawn']];
 		this.promotionPieces = [['Queen', 1],
@@ -321,10 +333,11 @@ var MedievalBritain = new Class({
 	
 	countryName: 'MedievalBritain',
 	countryDisplayName: 'Medieval Britain',
+	power: 'power of longbows',
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.description = 'Your pieces do not move when they capture other pieces. Instead, if an opponent\'s piece is within capturing range of one of your pieces and you choose to capture it, you remove it from the board without actually moving your piece. This action counts as your movement even though you have not technically moved.  Your bishops and rooks may only move up to three squares each turn.';
+		this.description = 'Your pieces capture without moving. Your bishops and rooks may only move up to three squares each turn.';
 		this.setupPieces = [['MafiaKing', 'MafiaRook', 'MafiaBishop', 'MafiaKnight'], 
 							['MafiaPawn', 'MafiaPawn', 'MafiaPawn', 'MafiaPawn']];
 		this.promotionPieces = [['MafiaRook', 0],
@@ -341,6 +354,7 @@ var Mongols = new Class({
 	Extends: Player,
 	
 	countryName: 'Mongols',
+	power: 'power of training',
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -360,6 +374,7 @@ var PapalStates = new Class({
 	
 	countryName: 'PapalStates',
 	countryDisplayName: 'Papal States',
+	power: 'power of the church',
 	
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -375,6 +390,7 @@ var Sparta = new Class({
 	Extends: Player,
 	
 	countryName: 'Sparta',
+	power: 'power of mastery',
 	
 	initialize:function (order, color) {
 		this.parent(order, color);
@@ -393,6 +409,7 @@ var Transylvania = new Class({
 	Extends: Player,
 
 	countryName: 'Transylvania',
+	power: 'power of vampires',
 
 	initialize: function (order, color) {
 		this.parent(order, color);
