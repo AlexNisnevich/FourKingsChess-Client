@@ -160,6 +160,20 @@ var Minister = new Class({
 	}
 });
 
+// Delegate
+
+var Delegate = new Class({
+	Extends: Piece,
+	
+	pieceName: 'Delegate',
+	pieceClass: 'Delegate',
+	pieceChar: 'D',
+	
+	canMove: function(square){
+		return (this.getSquare().isKingMove(square, this.side) || this.getSquare().isRookJump(square, this.side, 2));
+	}
+});
+
 // Sparta
 
 var SpartaWarrior = new Class({

@@ -1,19 +1,22 @@
 var baseUrl = 'http://alex.nisnevich.com/playchess/';
 var local = true; // disables multiplayer connections (overridden in multiplayer game)
 
+var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire',
+                 'Conquistadors', 'Huns', 'Hurons', 'Incas', 'Jerusalem', 
+                 'Macedonia', 'MedievalBritain', 'Mongols', 'PapalStates', 'Sparta', 
+                 'Transylvania'];
+
+var countriesAncient = ['AncientGreece', 'Athens', 'Huns', 'Macedonia', 'Sparta'];
+var countriesMedieval = ['Aztecs', 'ByzantineEmpire', 'Conquistadors', 'Incas', 'Jerusalem', 
+                         'MedievalBritain', 'Mongols'];
+var countriesEnlightenment = ['Britain', 'Hurons', 'PapalStates'];
+var countriesFantasy = ['Transylvania'];
+
 var game = new Game();
 game.setup();
 game.alert('Choose countries');
 
 setInterval(function () { game.pollGameState(); }, 2500);
-
-var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire', 
-				 'Huns', 'Hurons', 'Jerusalem', 'Macedonia', 'MedievalBritain', 
-				 'Mongols', 'PapalStates', 'Sparta', 'Transylvania'];
-var countriesAncient = ['AncientGreece', 'Athens', 'Huns', 'Macedonia', 'Sparta'];
-var countriesMedieval = ['Aztecs', 'ByzantineEmpire', 'Jerusalem', 'MedievalBritain', 'Mongols'];
-var countriesEnlightenment = ['Britain', 'Hurons', 'PapalStates'];
-var countriesFantasy = ['Transylvania'];
 
 $$('#setup select').each(function(dropdown) {
 	var blankOption = new Element('option', {

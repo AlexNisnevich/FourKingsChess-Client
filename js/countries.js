@@ -95,7 +95,7 @@ var Britain = new Class({
 
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.description = 'Ministers <img src="' + baseUrl + 'images/pieces/Minister_' + color + '.png" align="bottom"> can move like kings and like knights, and are royal. They cannot move like knights two turns in a row.';
+		this.description = 'Ministers <img src="' + baseUrl + 'images/pieces/Minister_' + color + '.png" align="bottom"> can move like kings and like knights. They cannot move like knights two turns in a row. If you have only one minister on the board, it is royal.';
 		this.setupPieces = [['Minister', 'Minister', 'Minister', 'Minister'],
 							['Pawn', 'Pawn', 'Pawn', 'Pawn']];
 		this.promotionPieces = [['Minister', 0]];
@@ -122,6 +122,37 @@ var ByzantineEmpire = new Class({
 							   ['Pawn', 'ByzantinePawn'],
 							   ['King', 'ByzantineKing']];
 	}
+});
+
+var Conquistadors = new Class ({
+	Extends: Player,
+
+    countryName: 'Conquistadors',
+	
+	startTurn: function(order, color){
+		var player = this;
+		
+		this.getPieces().filter(function(piece) {
+			return (piece.pieceClass != 'Pawn');
+		}).each(function(piece) {
+			game.getPieces(game.getOtherPlayers(player.order), null, -1).filter(function (targetPiece) {
+				return (targetPiece.getSquare().distance(piece.getSquare()) == 1) && 
+					!targetPiece.specialProperties.protectedFromSpecialAbilityCapture;
+			}).each(function (targetPiece) {
+					targetPiece.captured();
+					game.displayMove('[' + targetPiece.getSquare().toString() + '] ');
+			});
+		});
+	},
+	
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.description = 'At the start of your turn, if any opponent’s non-royal piece is horizontally or vertically adjacent to your bishop, knight, or king, destroy the enemy piece.';
+        this.setupPieces = [['Bishop', 'King', 'Pawn'],
+		                    ['Pawn', 'Pawn', 'Knight']];
+        this.promotionPieces = [['Knight', 0],
+								['Bishop', 0]];
+    }
 });
 
 var Huns = new Class({
@@ -183,6 +214,32 @@ var Hurons = new Class({
 							  ['Rook', 'HuronRook'],
 							  ['Pawn', 'HuronPawn']];
 	}
+});
+
+var Incas = new Class ({
+	Extends: Player,
+
+    countryName: 'Incas',
+	
+	startTurn: function(order, color){
+		var player = this;
+		this.getPieces('Delegate').each(function (delegate) {
+			game.getPieces(game.getOtherPlayers(player.order)).filter(function (targetPiece) {
+				return (targetPiece.getSquare().distance(delegate.getSquare()) == 1)
+			}).each(function (targetPiece) {
+				targetPiece.transferPossession(player);
+				game.displayMove('[' + targetPiece.getSquare().toString() + '] ');
+			});
+		});
+	},
+	
+    initialize: function (order, color) {
+        this.parent(order, color);
+        this.description = 'Delegates <img src="' + baseUrl + 'images/pieces/Delegate_' + color + '.png" align="bottom"> can move like kings or jump two squares horizontally or vertically. Whenever a delegate starts a turn horizontally or vertically adjacent to a nonroyal enemy piece, take control of that piece.';
+        this.setupPieces = [['King', 'Delegate', 'Delegate'],
+		                    ['Pawn', 'Pawn', 'Pawn']];
+        this.promotionPieces = [['Delegate', 0]];
+    }
 });
 
 var Jerusalem = new Class({

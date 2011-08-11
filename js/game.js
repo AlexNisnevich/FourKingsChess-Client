@@ -180,9 +180,9 @@ var Game = new Class({
 	 * Prepares a turn
 	 */
 	turnStart: function() {
-		this.currentTurn = new Element('tr');
-		new Element('td.num').appendText(this.turnNum).inject(this.currentTurn);
-		this.currentTurn.inject('moves');
+		var currentTurn = new Element('tr');
+		new Element('td.num').appendText(this.turnNum).inject(currentTurn);
+		currentTurn.inject('moves');
 	},
 	
 	/*
@@ -420,14 +420,23 @@ var Game = new Class({
 			game.gameOver($$('#board .royal')[0].object.getOwner());
 			suffix = '##';
 		} else {
-			this.players.each(function(player) {			
-				var defeated = (player.getPieces().length <= 1);
+			this.players.each(function(player) {
 				var check = player.getPieces().some(function (royalPiece) {
 					return royalPiece.inCheck();
 				});
+				var defeated = (player.getPieces(null, 1).length == 0);
+				var outOfGame = (player.getPieces().length <= 1);
 				
 				if (defeated) {
 					if (player.inGame) {
+						player.defeated(cp);
+						suffix = '#';
+					}
+				} else if (outOfGame) {
+					if (player.inGame) {
+						player.getPieces().each(function (piece) {
+							piece.captured();
+						})
 						player.defeated(cp);
 						suffix = '#';
 					}
@@ -510,8 +519,16 @@ var Game = new Class({
 	 * Displays the given text on the move table
 	 */
 	displayMove: function(txt) {
-		var move = new Element('td.move');
-		move.appendText(txt).inject(this.currentTurn);		
+		var currentTurn = $$('#moves tr').getLast();
+		
+		if (currentTurn.getChildren('.move' + this.currentPlayer).length > 0) {
+			var move = currentTurn.getChildren('.move' + this.currentPlayer)[0];
+		} else {
+			var move = new Element('td.move.move' + this.currentPlayer);
+		}
+		
+		move.inject(currentTurn);
+		new Element('span').appendText(txt).inject(move);
 	},
 		
 	/*
@@ -643,8 +660,6 @@ var Game = new Class({
 			});
 			$(tr).inject($('moves'));
 		});
-
-		this.currentTurn = $$('#moves tr').getLast();
 		
 		// display last move
 
