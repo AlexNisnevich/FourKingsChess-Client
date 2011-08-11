@@ -267,6 +267,24 @@ var ByzantineBishop = new Class({
 	}
 });
 
+var ByzantinePawn = new Class({
+	Extends: Pawn,
+
+	pieceClass: 'ByzantinePawn',
+
+	canMove: function (square) {
+		return (this.parent(square) || this.byzantineRetreat(square, this.side));
+	},
+	byzantineRetreat: function (dest, side) {
+		if (!(dest.inTwoByFour() == side) || dest.isOccupied()) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+});
+
 // Ancient Greece
 
 var GreecePiece = new Class({
