@@ -136,6 +136,8 @@ var King = new Class({
 
 // SPECIAL PIECES
 
+// Britain
+
 var Minister = new Class({
 	Extends: Piece,
 	
@@ -158,6 +160,8 @@ var Minister = new Class({
 	}
 });
 
+// Sparta
+
 var SpartaWarrior = new Class({
 	Extends: Piece,
 	
@@ -179,6 +183,8 @@ var SpartaWarrior = new Class({
 
 // DERIVED PIECES
 
+// Athens
+
 var AthensBishop = new Class({
 	Extends: Bishop,
 	
@@ -199,10 +205,12 @@ var AthensBishop = new Class({
 	
 	afterMove: function() {
 		if (this.moveType == 'teleport') {
-			game.getLastMoveText().appendText(' T');
+			game.getLastMoveText().appendText(' (t)');
 		}
 	}
 });
+
+// Byzantine Empire
 
 var ByzantineNonPawn = new Class({
     byzantineRetreat: function (dest, side) {
@@ -259,113 +267,16 @@ var ByzantineBishop = new Class({
     }
 });
 
-var ByzantinePawn = new Class({
-    Extends: Pawn,
+// Ancient Greece
 
-    pieceClass: 'ByzantinePawn',
-
-    canMove: function (square) {
-        return (this.parent(square) || this.byzantineRetreat(square, this.side));
-    },
-    byzantineRetreat: function (dest, side) {
-        if (!(dest.inTwoByFour() == side) || dest.isOccupied()) {
-            return false;
-        }
-        else {
-            return true;
-        }
-    }
-});
-
-var GreeceKnight = new Class({
-    Extends: Knight,
-
-    pieceClass: 'GreeceKnight',
-
-    canMove: function (square) {
-        this.moveType = 'normal';
+var GreecePiece = new Class({
+	greeceMove: function (square){
+		this.moveType = 'normal';
         if (this.getSquare().inTwoByFour() == this.side) {
-            return this.parent(square) || this.getSquare().isKingMove(square, this.side);
+            return this.getSquare().isKingMove(square, this.side);
         }
         else if (this.getSquare().inThreeByFive() == this.side) {
-            return this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2);
-        }
-        else if (this.getSquare().inCenterTwoByTwo() == true) {
-            if (this.parent(square)) {
-                return true;
-            } else if (this.getSquare().isRookJump(square, this.side, 1)
-                    && square.isOccupied()
-                    && !square.isOccupied(this.side)) {
-                this.moveType = 'shoot';
-                return true;
-            } else {
-                return false;
-            }
-        }
-        else {
-            return this.parent(square);
-        }
-    },
-
-    afterMove: function () {
-        if (this.moveType == 'shoot') {
-            this.moveTo(this.lastPosition, 'normal');
-            game.getLastMoveText().appendText(' (sh)');
-        }
-    }
-});
-
-
-var GreeceBishop = new Class({
-    Extends: Bishop,
-
-    pieceClass: 'GreeceBishop',
-
-    canMove: function (square) {
-        this.moveType = 'normal';
-        if (this.getSquare().inTwoByFour() == this.side) {
-            return this.parent(square) || this.getSquare().isKingMove(square, this.side);
-        }
-        else if (this.getSquare().inThreeByFive() == this.side) {
-            return this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2);
-        }
-        else if (this.getSquare().inCenterTwoByTwo() == true) {
-            if (this.parent(square)) {
-                return true;
-            } else if (this.getSquare().isRookJump(square, this.side, 1)
-                    && square.isOccupied()
-                    && !square.isOccupied(this.side)) {
-                this.moveType = 'shoot';
-                return true;
-            } else {
-                return false;
-            }
-        }
-        else {
-            return this.parent(square);
-        }
-    },
-
-    afterMove: function () {
-        if (this.moveType == 'shoot') {
-            this.moveTo(this.lastPosition, 'normal');
-            game.getLastMoveText().appendText(' (sh)');
-        }
-    }
-});
-
-var GreeceRook = new Class({
-    Extends: Rook,
-
-    pieceClass: 'GreeceRook',
-
-    canMove: function (square) {
-        this.moveType = 'normal';
-        if (this.getSquare().inTwoByFour() == this.side) {
-            return this.parent(square) || this.getSquare().isKingMove(square, this.side);
-        }
-        else if (this.getSquare().inThreeByFive() == this.side) {
-            return this.parent(square) || this.getSquare().isBishopJump(square, this.side, 2);
+            return this.getSquare().isBishopJump(square, this.side, 2);
         }
         else if (this.getSquare().inCenterTwoByTwo() == true) {
             if (this.getSquare().isRookJump(square, this.side, 1)
@@ -373,24 +284,65 @@ var GreeceRook = new Class({
                     && !square.isOccupied(this.side)) {
                 this.moveType = 'shoot';
                 return true;
-            } else if (this.parent(square)) {
-                return true;
-            } else {
+            }else {
                 return false;
             }
         }
         else {
             return this.parent(square);
         }
-    },
-
-    afterMove: function () {
-        if (this.moveType == 'shoot') {
+	},
+	greeceHasMoved: function(){
+	    if (this.moveType == 'shoot') {
             this.moveTo(this.lastPosition, 'normal');
             game.getLastMoveText().appendText(' (sh)');
         }
+	}
+});
+
+var GreeceKnight = new Class({
+    Extends: Knight,
+	Implements: GreecePiece,
+    pieceClass: 'GreeceKnight',
+
+    canMove: function (square) {
+        return (this.parent(square) || this.greeceMove(square));
+    },
+
+    afterMove: function () {
+        this.greeceHasMoved();
     }
 });
+
+var GreeceBishop = new Class({
+    Extends: Bishop,
+
+    pieceClass: 'GreeceBishop',
+	Implements: GreecePiece,
+    canMove: function (square) {
+        return (this.parent(square) || this.greeceMove(square));
+    },
+
+    afterMove: function () {
+        this.greeceHasMoved();
+    }
+});
+
+var GreeceRook = new Class({
+    Extends: Rook,
+	Implements: GreecePiece,
+    pieceClass: 'GreeceRook',
+
+    canMove: function (square) {
+		return (this.parent(square) || this.greeceMove(square));
+    },
+
+    afterMove: function () {
+        this.greeceHasMoved();
+    }
+});
+
+// Hurons
 
 var HuronBishop = new Class({
 	Extends: Bishop,
@@ -482,6 +434,8 @@ var HuronPawn = new Class({
     }
 });
 
+// Macedonia
+
 var MacedoniaPawn = new Class({
     Extends: Pawn,
 
@@ -538,76 +492,76 @@ var MacedoniaPawn = new Class({
     }
 });
 
+// Medieval Britain
+
+var MafiaPiece = new Class ({
+	hasMoved: function(){
+		if (this.lastCapture != null){
+			this.moveTo(this.lastPosition, 'normal');
+			game.getLastMoveText().appendText(' (sh)');
+		}
+	}
+});
+
 var MafiaRook = new Class ({
 	Extends: Rook,
-	
+	Implements: MafiaPiece,
 	pieceClass: 'MafiaRook',
 	
 	canMove: function(square){
 		return this.getSquare().isRookMove(square, this.side, 3);
 	},
+	
 	afterMove: function() {
-		if (this.lastCapture != null){
-			this.moveTo(this.lastPosition, 'normal');
-			game.getLastMoveText().appendText(' (sh)');
-		}
-	}	
+		this.hasMoved();
+	}
 });
 
 var MafiaBishop = new Class ({
 	Extends: Bishop,
-	
+	Implements: MafiaPiece,
 	pieceClass: 'MafiaBishop',
 	
 	canMove: function(square){
 		return this.getSquare().isBishopMove(square, this.side, 3);
 	},
+	
 	afterMove: function() {
-		if (this.lastCapture != null){
-			this.moveTo(this.lastPosition, 'normal');
-			game.getLastMoveText().appendText(' (sh)');
-		}
+		this.hasMoved();
 	}	
 });
 
 var MafiaKnight = new Class ({
 	Extends: Knight,
-	
+	Implements: MafiaPiece,
 	pieceClass: 'MafiaKnight',
 	
 	afterMove: function() {
-		if (this.lastCapture != null){
-			this.moveTo(this.lastPosition, 'normal');
-			game.getLastMoveText().appendText(' (sh)');
-		}
-	}	
+		this.hasMoved();
+	}
 });
 
 var MafiaKing = new Class ({
 	Extends: King,
-	
+	Implements: MafiaPiece,
 	pieceClass: 'MafiaKing',
 	
 	afterMove: function() {
-		if (this.lastCapture != null){
-			this.moveTo(this.lastPosition, 'normal');
-			game.getLastMoveText().appendText(' (sh)');
-		}
+		this.hasMoved();
 	}	
 });
 
 var MafiaPawn = new Class ({
 	Extends: Pawn,
-	
+	Implements: MafiaPiece,
 	pieceClass: 'MafiaPawn',
 	
 	afterMove: function() {
-		if (this.lastCapture != null){
-			this.moveTo(this.lastPosition, 'normal');
-			game.getLastMoveText().appendText(' (sh)');
-		}
-	}	
+		this.hasMoved();
+	}
 });
+
+// Mongols
 
 var MongolPawn =  new Class({
 	Extends: Pawn,
@@ -638,6 +592,8 @@ var MongolPawn =  new Class({
         this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
     }
 });
+
+// Papal States
 
 var PapalBishop = new Class({
 	Extends: Bishop,
@@ -674,6 +630,8 @@ var ArchBishop = new Class({
     	// blank override
     }
 });
+
+// Transylvania
 
 var VampKing = new Class({
     Extends: King,
