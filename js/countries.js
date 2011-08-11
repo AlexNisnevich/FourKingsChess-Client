@@ -71,16 +71,15 @@ var Aztecs = new Class({
 			'piece',
 			'confirmCancel',
 			function (piece) {
-				piece = piece.object;
 				return (piece.side == player.order && (piece.pieceClass == 'Rook' || piece.pieceClass == 'Knight'));
 			},
 			function (piece) {
-				if (piece.object.pieceClass == 'Knight'){
-					piece.object.transform('Rook');
-					game.displayMove('N' + piece.object.getSquare().toString() + '=R');
-				} else if (piece.object.pieceClass == 'Rook'){
-					piece.object.transform('Knight');
-					game.displayMove('R' + piece.object.getSquare().toString() + '=N');
+				if (piece.pieceClass == 'Knight'){
+					piece.transform('Rook');
+					game.displayMove('N' + piece.getSquare().toString() + '=R');
+				} else if (piece.pieceClass == 'Rook'){
+					piece.transform('Knight');
+					game.displayMove('R' + piece.getSquare().toString() + '=N');
 				}
 				player.endTurn();
 			},
@@ -207,8 +206,8 @@ var Jerusalem = new Class({
 		this.parent();
 
 		this.getPieces().each(function (piece) {
-			piece.object.specialProperties.castle = false;
-			piece.removeClass('castle');
+			piece.specialProperties.castle = false;
+			piece.element.removeClass('castle');
 		});
 	},
 
@@ -220,27 +219,26 @@ var Jerusalem = new Class({
 			'piece',
 			'confirmCancel',
 			function (piece) {
-				piece = piece.object;
 				return (piece.side == player.order && !piece.isRoyal() && piece != movedPiece);
 			},
 			function (piece) {
-				piece.object.specialProperties.castle = true;
-				piece.addClass('castle');
+				piece.specialProperties.castle = true;
+				piece.element.addClass('castle');
 				game.getLastMoveText().appendText(', [' +
-						piece.object.pieceChar + piece.object.getSquare().toString() + ']');
+						piece.pieceChar + piece.getSquare().toString() + ']');
 			}
 		);
 		return false;
 	},
 
 	capturable: function (myPiece, capturingPiece) {
-		return (!myPiece.specialProperties.castle || capturingPiece.isRoyal());
+		return (!myPiece.specisalProperties.castle || capturingPiece.isRoyal());
 	},
 
 	afterImport: function () {
 		this.getPieces().each(function (piece) {
-			if (piece.object.specialProperties.castle) {
-				piece.addClass('castle');
+			if (piece.specialProperties.castle) {
+				piece.element.addClass('castle');
 			}
 		});
 	}
@@ -253,7 +251,7 @@ var Macedonia = new Class({
 
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.description = 'Your pawns can also move or capture twice as far away as a normal pawn (that is, they can move always move one or two squares forward , can move two or four squares forward when on the second row, and can capture one or two squares diagonally), and can promote to a rook, bishop, or queen. You can only have one queen in play at a time.';
+		this.description = 'Your pawns can also move or capture twice as far away as a normal pawn (that is, they can move always move one or two squares forward, can move two or four squares forward when on the second row, and can capture one or two squares diagonally), and can promote to a rook, bishop, or queen. You can only have one queen in play at a time.';
 		this.setupPieces = [['King', 'Rook', 'Bishop', 'MacedoniaPawn'],
 							['MacedoniaPawn', 'MacedoniaPawn', 'MacedoniaPawn', 'MacedoniaPawn']];
 		this.promotionPieces = [['Queen', 1],

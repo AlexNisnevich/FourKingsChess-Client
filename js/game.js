@@ -320,13 +320,13 @@ var Game = new Class({
 		}
 		
 		$$('#board .' + selectType).filter(function (item) {
-			return selector(item);
+			return selector(item.object);
 		}).each(function (item) {
-			onAvailable(item);
+			onAvailable(item.object);
 			item.addClass('clickable');
 			item.addEvent('click', function () {
-				game.selection = item;
-				onSelect(item);
+				game.selection = item.object;
+				onSelect(item.object);
 			})
 		});
 		
@@ -347,20 +347,20 @@ var Game = new Class({
 		switch (selectType) {
 		case 'piece':
 			onAvailable = function (piece) {
-				piece.object.getSquare().element.addClass('hoverAvailable')
+				piece.getSquare().element.addClass('hoverAvailable')
 			};
 			onSelect = function (piece) {
 				$$('#board .square').removeClass('hoverValid');
-				piece.object.getSquare().element.addClass('hoverValid');
+				piece.getSquare().element.addClass('hoverValid');
 			};
 			break;
 		case 'square':
 			onAvailable = function (square) {
-				square.addClass('hoverAvailable')
+				square.element.addClass('hoverAvailable')
 			};
 			onSelect = function (square) {
 				$$('#board .square').removeClass('hoverValid');
-				square.addClass('hoverValid');
+				square.element.addClass('hoverValid');
 			};
 			break;
 		}
@@ -422,7 +422,7 @@ var Game = new Class({
 		} else {
 			this.players.each(function(player) {			
 				var defeated = (player.getPieces().length <= 1);
-				var check = player.getPieces(null, 1).some(function (royalPiece) {
+				var check = player.getPieces().some(function (royalPiece) {
 					return royalPiece.inCheck();
 				});
 				
@@ -1268,7 +1268,7 @@ var Square = new Class({
 	isThreatenedBy: function(players) {
 		var square = this;
 		return game.getPieces(players).some( function (piece) {
-			piece.canMove(square);
+			return piece.canMove(square);
 		});
 	},
 
