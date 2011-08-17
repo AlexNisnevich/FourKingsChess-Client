@@ -38,7 +38,18 @@ Element.implement({
 	 */
 	clear: function() {
 		this.innerHTML = '';
-	}
+	},
+
+    /*
+     * Get inner text across browsers
+     */
+    getText: function() {
+        if (document.all) {
+			return this.innerText
+		} else { // Firefox
+			return this.textContent;
+		}
+    }
 });
 
 Array.implement({
@@ -82,10 +93,9 @@ var AbstractFactory = new new Class({
 var Game = new Class({
 	players: [], // array of players
 	currentPlayer: 0, // number of current player
-	currentTurn: null, // HTML element that stores current turn's moves
-	lastPieceMoved: null, // last Piece moved
 	turnNum: 1, // current turn number
 	movable: false, // can pieces be moved?
+	lastPieceMoved: null, // last Piece moved
 	
 	//
 	// SETUP
@@ -145,6 +155,12 @@ var Game = new Class({
 			description.innerHTML = '<span class="countryName ' + player.color +'">' + player.countryDisplayName + ':</span> <span class="power">You have the ' + player.power + '</span>. ' + player.description;
 			description.inject($('descriptions'));
 		});
+
+        // set game height based on descriptions height
+        var baseHeight = parseInt($('gameContainer').getStyle('min-height'));
+        var descriptionsHeight = parseInt($('descriptions').getStyle('height'));
+        var totalHeight = (baseHeight + descriptionsHeight) + 'px';
+        $('gameContainer').setStyle('height', totalHeight);
 	},
 	
 	//
@@ -402,7 +418,7 @@ var Game = new Class({
 
 	/*
 	 * @returns: '##' if game over, '#' if checkmate, '+' if check, '' otherwise
-	 * Checks for game over, checkmate, check
+	 * Checks for draw, game over, checkmate, check
 	 */
 	checkChecks: function() {
 		var game = this;
@@ -414,8 +430,15 @@ var Game = new Class({
 		
 		this.clearStatus(); // first, clear existing alert
 		
-		if (this.players.filter(function (player) {
-			return (player.getPieces(null, 1).length != 0);
+        // we can't use Player.getPieces(null, 1) here, because we need to check .royal
+        // rather than .isRoyal() - it's ok to have more than one royal piece
+
+		if (this.players.every(function (p) {
+            return !p.inGame || p.offeringDraw;
+        })) {
+            game.gameOver(); // Draw game
+        } else if (this.players.filter(function (player) {
+			return (player.getPieces().filter(function (piece) {return piece.royal;}).length != 0);
 		}).length == 1) {
 			game.gameOver($$('#board .royal')[0].object.getOwner());
 			suffix = '##';
@@ -424,12 +447,13 @@ var Game = new Class({
 				var check = player.getPieces().some(function (royalPiece) {
 					return royalPiece.inCheck();
 				});
-				var defeated = (player.getPieces(null, 1).length == 0);
+				var defeated = (player.getPieces().filter(function (piece) {return piece.royal;}).length == 0);
 				var outOfGame = (player.getPieces().length <= 1);
 				
 				if (defeated) {
 					if (player.inGame) {
 						player.defeated(cp);
+                        game.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') has been defeated.');
 						suffix = '#';
 					}
 				} else if (outOfGame) {
@@ -459,33 +483,68 @@ var Game = new Class({
 			checkAlert = checkAlert.substring(0, checkAlert.length-1) + '!'; // (removing last comma)
 			this.alert(checkAlert);
 		}
+
+        // Strike through defeated players in moves box
+        this.players.filter(function (player) {
+            return !player.inGame;
+        }).each(function (player) {
+            $$('.move.' + player.color).addClass('defeated');
+        })
 		
 		return suffix;
 	},
 
 	/*
-	 * @params: winner = Player that won the game
+	 * @params: winner = Player that won the game (or null for draw)
 	 * Displays victory status
 	 */
 	gameOver: function(winner) {
-		this.getPieces().each(function(piece) {
-			if (piece.getOwner() != winner) {
-				piece = piece.transferPossession(winner);
-			}
-			piece.drag.detach();
-		});
+        if (winner) {
+            // Win
+
+		    this.getPieces().each(function(piece) {
+			    if (piece.getOwner() != winner) {
+				    piece = piece.transferPossession(winner);
+			    }
+			    piece.drag.detach();
+		    });
 		
-		var outcomeText = winner.countryDisplayName + ' wins.';
+		    var outcomeText = winner.countryDisplayName + ' wins.';
 
-		var outcome = $('outcome');
-		outcome.innerHTML = outcomeText;
-		outcome.addClass(winner.color);
-		outcome.show();
+		    var outcome = $('outcome');
+		    outcome.innerHTML = outcomeText;
+		    outcome.addClass(winner.color);
+		    outcome.show();
 
-		this.alert('Game over.<br>' + outcomeText);
-		$('alert').addClass(winner.color);
-		$('toMove').hide();
-	},
+		    this.alert('Game over.<br>' + outcomeText);
+		    $('alert').addClass(winner.color);
+		    $('toMove').hide();
+
+            if (stage != 3) {
+                this.publishGameOver(winner.order);
+                game.sendGameMsg('Game over. ' + winner.userName + ' (' + winner.countryDisplayName + ') wins.');
+            }
+        } else {
+            // Draw
+
+            this.getPieces().each(function(piece) {
+			    piece.drag.detach();
+		    });
+
+            var outcomeText = 'Draw game.';
+
+		    var outcome = $('outcome');
+		    outcome.innerHTML = outcomeText;
+		    outcome.show();
+
+            this.alert('Game over.<br>' + outcomeText);
+		    $('toMove').hide();
+
+            if (stage != 3) {
+                game.sendGameMsg('Draw game.');
+            }
+        }
+    },
 	
 	// pieces
 	
@@ -559,34 +618,30 @@ var Game = new Class({
 	/*
 	 * @return JSON object containing current game state
 	 */
-	export: function() {
+	exportGame: function() {
 		var exportedGame = {
 			gameVars: {
 				currentPlayer: this.currentPlayer,
 				turnNum: this.turnNum
 			},
 			players: this.players.map(function(player) {
-				return player.export();
+				return player.exportPlayer();
 			}),
 			board: {
 				pieces: this.getPieces().map(function(piece) {
-					return piece.export();
+					return piece.exportPiece();
 				})
 			},
 			graveyard: $$('#graveyard .piece').map(function(piece) {
-				return piece.object.export();
+				return piece.object.exportPiece();
 			}),
 			moves: $$('#moves tr').map(function (turn) {
 				return turn.getChildren().map(function (move) {
-					if (document.all) { // firefox fix
-						var text = move.innerText.replace('+', 'plus');
-					} else{
-						var text = move.textContent.replace('+', 'plus');
-					}
-
-					return {
+					var text = move.getText().replace('+', 'plus');
+					
+                    return {
 						text: text,
-						class: move.getAttribute('class')
+						'class': move.getAttribute('class')
 					};
 				});
 			})
@@ -607,7 +662,7 @@ var Game = new Class({
 	 * @params gameState: JSON object containing game state
 	 * Imports game from JSON
 	 */
-	import: function(state) {
+	importGame: function(state) {
 		var game = this;
 		
 		// reset things, in case this is called in the middle of a game
@@ -653,22 +708,22 @@ var Game = new Class({
 			var tr = new Element('tr');
 			turn.each(function (move) {
 				var td = new Element('td', {
-					text: move.text.replace('plus', '+'),
-					'class': move.class
+					text: move.text.replace(/plus/g, '+'),
+					'class': move['class']
 				});
 				$(td).inject($(tr));
 			});
 			$(tr).inject($('moves'));
 		});
-		
-		// display last move
+
+        // display last move
 
 		this.displayLastMove(state.lastMove, true);
 
 		// run any special import events
 		
 		game.players.each(function (player) {
-			player.afterImport();
+			player.afterimportGame();
 		})
 		
 		// kind of like calling startGame(), but without starting a new turn
@@ -735,10 +790,11 @@ var Game = new Class({
 		if (local) return;
 
 		var publishRequest = new Request({
-			url: baseUrl + 'Game/SaveState/',
+			url: baseUrl + 'Games/SaveState/',
 			data: 'id=' + gameId 
-				+ '&state=' + JSON.stringify(this.export())
-				+ '&turn=' + this.turnNum,
+				+ '&state=' + JSON.stringify(this.exportGame())
+				+ '&turn=' + this.turnNum
+                + '&player=' + this.currentPlayer,
 			onSuccess: function (txt) {
 				numState++;
 			}
@@ -746,6 +802,38 @@ var Game = new Class({
 
 		publishRequest.send();
 	},
+
+    /*
+     * @params winner: turn order of winning player
+     * Notifies server that the game has ended.
+     */
+    publishGameOver: function(winner) {
+        if (local) return;
+
+		var publishRequest = new Request({
+			url: baseUrl + 'Games/GameOver/',
+			data: 'id=' + gameId 
+				+ '&winner=' + winner
+		});
+
+		publishRequest.send();
+    },
+
+    /*
+     * @params loser: turn order of losing player
+     * Notifies server that a player has been defeated.
+     */
+    publishPlayerDefeated: function(loser) {
+        if (local) return;
+
+        var publishRequest = new Request({
+			url: baseUrl + 'Games/Defeated/',
+			data: 'id=' + gameId 
+				+ '&loser=' + loser
+		});
+
+		publishRequest.send();
+    },
 
 	/*
 	 * Polls server for new game state. If there is a new game state, imports it.
@@ -756,17 +844,24 @@ var Game = new Class({
 		var game = this;
 
 		var pollRequest = new Request({
-			url: baseUrl + 'Game/PollState/',
+			url: baseUrl + 'Games/PollState/',
 			data: 'id=' + gameId 
 				+ '&num_state=' + numState
 				+ '&num_chats=' + $$('#messages .msg').length,
 			onSuccess: function (txt) {
 				var data = JSON.parse(txt);
-				numState = data.num;
+				
+                numState = data.num;
+
+                if (data.stage > stage) {
+                    location.reload(true);
+                }
+
 				if (data.state) {
-					game.import(data.state);
+					game.importGame(data.state);
 					game.tabNotification('movesTab');
 				}
+
 				if (data.chats) {
 					game.displayChat(data.chats);
 					game.tabNotification('chatTab');
@@ -779,6 +874,7 @@ var Game = new Class({
 
 	/*
 	 * @params lastMove: array as created in Game.export()
+     *         animate: whether to animate the move
 	 * Highlights the last move made
 	 */
 	displayLastMove: function(lastMove, animate) {
@@ -820,11 +916,15 @@ var Game = new Class({
 		return (currentPlayer == this.getCurrentPlayer().userName);
 	},
 
+    /*
+     * @params msg: Message to send
+     * Sends a chat message from the logged-in user
+     */
 	sendChat: function(msg) {
 		var game = this;
 
 		var chatRequest = new Request({
-			url: baseUrl + 'Game/SendChat/',
+			url: baseUrl + 'Games/SendChat/',
 			data: 'id=' + gameId + '&msg=' + msg.replace(/"/g, "'"),
 			onSuccess: function (txt) {
 				game.displayChat (JSON.parse(txt));
@@ -834,18 +934,46 @@ var Game = new Class({
 		chatRequest.send();
 	},
 
+    /*
+     * @params msg: Message to send
+     * Sends an anonymous game-related chat message
+     */
+    sendGameMsg: function(msg) {
+        var game = this;
+
+		var chatRequest = new Request({
+			url: baseUrl + 'Games/SendGameMsg/',
+			data: 'id=' + gameId + '&msg=' + msg.replace(/"/g, "'"),
+			onSuccess: function (txt) {
+				game.displayChat (JSON.parse(txt));
+			}
+		});
+
+		chatRequest.send();
+    },
+
+    /*
+     * @params chat: array containing chat messages in the form [poster, text, timestamp]
+     * Displays an array of chat messages in the chat window
+     */
 	displayChat: function(chat) {
 		var game = this;
 
 		$('messages').clear();
 
 		chat.each(function (msg) {
+            var msgPoster = msg[0];
+            var msgText = msg[1];
+            var msgTime = msg[2] ? '[' + new Date(parseInt(msg[2]) * 1000).format('%m/%d %X') + '] ' : '';
+
 			var color = '';
 			var country = 'Guest';
 			
-			if (stage >= 2) {
-				var playerObj = game.players.filter(function (player) {
-					return (player.userName == msg[0]);
+            if (msgPoster == '**game**') {
+                var msgHtml = '<span class="gameMsg">' + msgTime + msgText + '</span>';
+			} else if (stage >= 2) {
+                var playerObj = game.players.filter(function (player) {
+					return (player.userName == msgPoster);
 				});
 
 				if (playerObj.length > 0) {
@@ -853,9 +981,9 @@ var Game = new Class({
 					country = playerObj[0].countryDisplayName;
 				}
 
-				var msgHtml = '<span class="name ' + color + '">' + msg[0] + ' (' + country + ') :</span> ' + msg[1];
+				var msgHtml = '<span class="name ' + color + '">' + msgTime + msgPoster + ' (' + country + ') :</span> ' + msgText;
 			} else {
-				var msgHtml = '<span class="name">' + msg[0] + ':</span> ' + msg[1];
+				var msgHtml = '<span class="name">' + msgTime + msgPoster + ':</span> ' + msgText;
 			}
 
 			var msg = new Element('div.msg', {
@@ -867,11 +995,60 @@ var Game = new Class({
 		$('messages').scrollTop = $('messages').scrollHeight; // scroll down
 	},
 
+    /*
+     * @params tab: ID of the tab to display a notification in
+     * Notifies the user that a tab has updated content
+     */
 	tabNotification: function(tab) {
 		if (!$(tab).hasClass('active')) {
 			$(tab).addClass('notify');
 		}
-	}
+	},
+
+    /*
+     * Resigns the game for the logged-in player
+     */
+    resign: function() {
+        var playerArr = this.players.filter (function (p) {
+            return p.userName == currentPlayer;
+        });
+        if (playerArr.length == 0) return;
+
+        var player = playerArr[0];
+        player.defeated();
+        this.publishGameState();
+        this.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') has resigned.');
+        this.publishPlayerDefeated(player.order);
+
+        $('resignButton').disabled = 'disabled';
+        if (this.amIUp()) {
+            this.nextPlayer();
+        }
+    },
+
+    /*
+     * Offers a draw as the logged-in player
+     */
+    offerDraw: function() {
+        var playerArr = this.players.filter (function (p) {
+            return p.userName == currentPlayer;
+        });
+        if (playerArr.length == 0) return;
+
+        var player = playerArr[0];
+        this.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') is offering a draw.');
+        player.offeringDraw = true;
+        this.publishGameState();
+        this.checkChecks();
+        
+        var drawRequest = new Request({
+			url: baseUrl + 'Games/OfferDraw/',
+			data: 'id=' + gameId
+		});
+        drawRequest.send();
+        
+        $('drawButton').disabled = 'disabled';
+    }
 });
 
 var Player = new Class({
@@ -886,6 +1063,7 @@ var Player = new Class({
 
 	check: false, // is the player currently in check?
 	inGame: true, // is the player currently in the game?
+    offeringDraw: false, // is the player currently offering a draw?
 	justDefeated: false, // was the player defeated within the last turn?
 	
 	setupPieces: [], // starting setup: 2-dimensional array, where the first row is the bottom row, etc.
@@ -949,7 +1127,7 @@ var Player = new Class({
 	},
 	
 	/*
-	 * @params: defeatingPlayer = the player that defeated this player
+	 * @params: defeatingPlayer = the player that defeated this player (if any)
 	 * Called when this player is defeated
 	 */
 	defeated: function(defeatingPlayer) {
@@ -959,7 +1137,16 @@ var Player = new Class({
 		
 		this.justDefeated = true;
 		
-		// transfer possession
+		// if nobody defeated you (e.g. resign), your pieces just disappear
+
+        if (!defeatingPlayer) {
+            game.getPieces(this).each(function (piece) {
+                piece.captured();
+            })
+            return;
+        }
+        
+        // transfer possession
 		
 		game.getPieces(this).each(function (piece) {
 			piece.transferPossession(defeatingPlayer);
@@ -1087,13 +1274,14 @@ var Player = new Class({
 	/*
 	 * @return JSON object containing player data
 	 */
-	export: function() {
+	exportPlayer: function() {
 		return {
 			country: this.countryName,
 			color: this.color,
 			properties: {
 				check: this.check,
 				inGame: this.inGame,
+                offeringDraw: this.offeringDraw,
 				justDefeated: this.justDefeated,
 				promotionPieces: this.promotionPieces,
 				lastMoveType: this.lastMoveType,
@@ -1105,7 +1293,7 @@ var Player = new Class({
 	/*
 	 * Function called after this player is imported
 	 */
-	afterImport: function() {
+	afterimportGame: function() {
 		return; // override this method
 	}
 });
@@ -1813,7 +2001,7 @@ var Piece = new Class({
 	/*
 	 * @return JSON object containing piece data
 	 */
-	export: function() {
+	exportPiece: function() {
 		var pieceExport = {
 			x: this.x,
 			y: this.y,

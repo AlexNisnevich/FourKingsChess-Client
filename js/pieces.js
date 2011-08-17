@@ -66,7 +66,7 @@ var Pawn = new Class({
 		$('overlay').show();
 	},
 	
-	export: function() {
+	exportPiece: function() {
 		var obj = this.parent();
 		obj.props.direction = this.direction;
 		return obj;

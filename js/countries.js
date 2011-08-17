@@ -147,7 +147,7 @@ var Conquistadors = new Class ({
 					!targetPiece.specialProperties.protectedFromSpecialAbilityCapture;
 			}).each(function (targetPiece) {
 					targetPiece.captured();
-					game.displayMove('[' + targetPiece.getSquare().toString() + '] ');
+					game.displayMove('[' + targetPiece.getSquare().toString() + '], ');
 			});
 		});
 	},
@@ -238,7 +238,7 @@ var Incas = new Class ({
 				return (targetPiece.getSquare().distance(delegate.getSquare()) == 1)
 			}).each(function (targetPiece) {
 				targetPiece.transferPossession(player);
-				game.displayMove('[' + targetPiece.getSquare().toString() + '] ');
+				game.displayMove('[' + targetPiece.getSquare().toString() + '], ');
 			});
 		});
 	},
@@ -423,3 +423,6 @@ var Transylvania = new Class({
 							  ['King', 'VampKing']];
 	}
 });
+
+// Backward compatibility
+var Mafia = MedievalBritain;
