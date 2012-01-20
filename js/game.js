@@ -40,16 +40,16 @@ Element.implement({
 		this.innerHTML = '';
 	},
 
-    /*
-     * Get inner text across browsers
-     */
-    getText: function() {
-        if (document.all) {
-			return this.innerText
+	/*
+	 * Get inner text across browsers
+	 */
+	getText: function() {
+		if (document.all) {
+			return this.innerText;
 		} else { // Firefox
 			return this.textContent;
 		}
-    }
+	}
 });
 
 Array.implement({
@@ -91,18 +91,19 @@ var AbstractFactory = new new Class({
 //
 
 var Game = new Class({
+	messenger: null, // Messenger object for handling publish and poll requests
 	players: [], // array of players
 	currentPlayer: 0, // number of current player
 	turnNum: 1, // current turn number
 	movable: false, // can pieces be moved?
 	lastPieceMoved: null, // last Piece moved
+	lastMove: [], // array of operations in the last player's move
 	
 	//
 	// SETUP
 	//
 	
 	initialize: function() {
-		
 	},
 	
 	/*
@@ -156,11 +157,11 @@ var Game = new Class({
 			description.inject($('descriptions'));
 		});
 
-        // set game height based on descriptions height
-        var baseHeight = parseInt($('gameContainer').getStyle('min-height'));
-        var descriptionsHeight = parseInt($('descriptions').getStyle('height'));
-        var totalHeight = (baseHeight + descriptionsHeight) + 'px';
-        $('gameContainer').setStyle('height', totalHeight);
+	// set game height based on descriptions height
+	var baseHeight = parseInt($('gameContainer').getStyle('min-height'));
+	var descriptionsHeight = parseInt($('descriptions').getStyle('height'));
+	var totalHeight = (baseHeight + descriptionsHeight) + 'px';
+	$('gameContainer').setStyle('height', totalHeight);
 	},
 	
 	//
@@ -220,20 +221,16 @@ var Game = new Class({
 			this.currentPlayer++;
 		}
 
-		// save and display last move
-		if (this.lastPieceMoved) {
-			this.lastMove = new Array(
-				new Array(this.lastPieceMoved.x, this.lastPieceMoved.y),
-				new Array(this.lastPieceMoved.lastPosition.x, this.lastPieceMoved.lastPosition.y)
-			);
-			this.displayLastMove(this.lastMove);
-		}
-
 		// post new gamestate to server
 		this.publishGameState();
+		
+		// clear lastMove array
+		// this.displayLastMove(this.lastMove); // we already display the last move in importState()
+		this.lastMove = [];
 
 		// start next player's turn
 		this.playerStart();
+		
 	},
 	
 	/*
@@ -242,6 +239,21 @@ var Game = new Class({
 	nextTurn: function() {
 		this.turnNum++;
 		this.turnStart();
+	},
+
+	/*
+	 *	Skips a player's turn
+	 */
+	skipTurn: function() {
+	  this.displayMove('--');
+	 	this.nextPlayer();
+	},
+	
+	/*
+	 * Appends moveObj to the lastMove array
+	 */
+	addToLastMove: function(moveObj) {
+		this.lastMove.push(moveObj);
 	},
 	
 	//
@@ -352,41 +364,42 @@ var Game = new Class({
 	
 	/*
 	 * Creates a prompt with recommended settings (see prompt() for params)
-	 * dontEndTurn: (optional) Don't end the player's turn at the end of the prompt
+	 * endTurnOnCancel: (optional) End the player's turn if Cancel is selected
 	 */
-	promptSimple: function (txt, selectType, buttonType, selector, onConfirm, dontEndTurn) {
+	promptSimple: function (txt, selectType, buttonType, selector, onConfirm, endTurnOnCancel) {
 		var onAvailable = function () {};
 		var onSelect = function () {};
-		var onCancel = function () {}; // left blank
-		var onEnd = function () {};
 		
 		switch (selectType) {
-		case 'piece':
-			onAvailable = function (piece) {
-				piece.getSquare().element.addClass('hoverAvailable')
-			};
-			onSelect = function (piece) {
-				$$('#board .square').removeClass('hoverValid');
-				piece.getSquare().element.addClass('hoverValid');
-			};
-			break;
-		case 'square':
-			onAvailable = function (square) {
-				square.element.addClass('hoverAvailable')
-			};
-			onSelect = function (square) {
-				$$('#board .square').removeClass('hoverValid');
-				square.element.addClass('hoverValid');
-			};
-			break;
+			case 'piece':
+				onAvailable = function (piece) {
+					piece.getSquare().element.addClass('hoverAvailable')
+				};
+				onSelect = function (piece) {
+					$$('#board .square').removeClass('hoverValid');
+					piece.getSquare().element.addClass('hoverValid');
+				};
+				break;
+			case 'square':
+				onAvailable = function (square) {
+					square.element.addClass('hoverAvailable')
+				};
+				onSelect = function (square) {
+					$$('#board .square').removeClass('hoverValid');
+					square.element.addClass('hoverValid');
+				};
+				break;
 		}
 
-		onEnd = function () {
+		var onEnd = function () {
 			$$('#board .square').removeClass('hoverAvailable').removeClass('hoverValid');
-			if (!dontEndTurn) {
+		};
+		
+		var onCancel = function () {
+			if (endTurnOnCancel) {
 				game.getCurrentPlayer().endTurn();
 			}
-		};
+		}
 		
 		this.prompt(txt, selectType, buttonType, selector, onAvailable, onSelect, onConfirm, onCancel, onEnd); 
 	},
@@ -430,14 +443,14 @@ var Game = new Class({
 		
 		this.clearStatus(); // first, clear existing alert
 		
-        // we can't use Player.getPieces(null, 1) here, because we need to check .royal
-        // rather than .isRoyal() - it's ok to have more than one royal piece
+		// we can't use Player.getPieces(null, 1) here, because we need to check .royal
+		// rather than .isRoyal() - it's ok to have more than one royal piece
 
 		if (this.players.every(function (p) {
-            return !p.inGame || p.offeringDraw;
-        })) {
-            game.gameOver(); // Draw game
-        } else if (this.players.filter(function (player) {
+			return !p.inGame || p.offeringDraw;
+		})) {
+			game.gameOver(); // Draw game
+		} else if (this.players.filter(function (player) {
 			return (player.getPieces().filter(function (piece) {return piece.royal;}).length != 0);
 		}).length == 1) {
 			game.gameOver($$('#board .royal')[0].object.getOwner());
@@ -453,7 +466,7 @@ var Game = new Class({
 				if (defeated) {
 					if (player.inGame) {
 						player.defeated(cp);
-                        game.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') has been defeated.');
+						game.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') has been defeated.');
 						suffix = '#';
 					}
 				} else if (outOfGame) {
@@ -484,13 +497,13 @@ var Game = new Class({
 			this.alert(checkAlert);
 		}
 
-        // Strike through defeated players in moves box
-        this.players.filter(function (player) {
-            return !player.inGame;
-        }).each(function (player) {
-            $$('.move.' + player.color).addClass('defeated');
-        })
-		
+		// Strike through defeated players in moves box
+		this.players.filter(function (player) {
+			return !player.inGame;
+		}).each(function (player) {
+			$$('.move.' + player.color).addClass('defeated');
+		})
+			
 		return suffix;
 	},
 
@@ -499,54 +512,56 @@ var Game = new Class({
 	 * Displays victory status
 	 */
 	gameOver: function(winner) {
-        if (winner) {
-            // Win
-
-		    this.getPieces().each(function(piece) {
-			    if (piece.getOwner() != winner) {
-				    piece = piece.transferPossession(winner);
-			    }
-			    piece.drag.detach();
-		    });
-		
-		    var outcomeText = winner.countryDisplayName + ' wins.';
-
-		    var outcome = $('outcome');
-		    outcome.innerHTML = outcomeText;
-		    outcome.addClass(winner.color);
-		    outcome.show();
-
-		    this.alert('Game over.<br>' + outcomeText);
-		    $('alert').addClass(winner.color);
-		    $('toMove').hide();
-
-            if (stage != 3) {
-                this.publishGameOver(winner.order);
-                game.sendGameMsg('Game over. ' + winner.userName + ' (' + winner.countryDisplayName + ') wins.');
-            }
-        } else {
-            // Draw
-
-            this.getPieces().each(function(piece) {
-			    piece.drag.detach();
-		    });
-
-            var outcomeText = 'Draw game.';
-
-		    var outcome = $('outcome');
-		    outcome.innerHTML = outcomeText;
-		    outcome.show();
-
-            this.alert('Game over.<br>' + outcomeText);
-		    $('toMove').hide();
-
-            if (stage != 3) {
-                game.sendGameMsg('Draw game.');
-            }
-        }
-    },
+		if (winner) {
+		  // Win
 	
-	// pieces
+			this.getPieces().each(function(piece) {
+				if (piece.getOwner() != winner) {
+					piece = piece.transferPossession(winner);
+				}
+				piece.drag.detach();
+			});
+		
+			var outcomeText = winner.countryDisplayName + ' wins.';
+	
+			var outcome = $('outcome');
+			outcome.innerHTML = outcomeText;
+			outcome.addClass(winner.color);
+			outcome.show();
+	
+			this.alert('Game over.<br>' + outcomeText);
+			$('alert').addClass(winner.color);
+			$('toMove').hide();
+	
+		  if (!this.messenger.isGameFinished()) {
+			  this.publishGameOver(winner.order);
+			  this.sendGameMsg('Game over. ' + winner.userName + ' (' + winner.countryDisplayName + ') wins.');
+		  }
+		} else {
+		  // Draw
+	
+		  this.getPieces().each(function(piece) {
+				piece.drag.detach();
+			});
+	
+		  var outcomeText = 'Draw game.';
+	
+			var outcome = $('outcome');
+			outcome.innerHTML = outcomeText;
+			outcome.show();
+	
+		  this.alert('Game over.<br>' + outcomeText);
+			$('toMove').hide();
+	
+		  if (!this.messenger.isGameFinished()) {
+			this.sendGameMsg('Draw game.');
+		  }
+		}
+  },
+	
+	//
+	// PIECES
+	//
 	
 	/*
 	 * @params: choice = the Piece the player has selected to promote to
@@ -561,17 +576,20 @@ var Game = new Class({
 		pawn.element.dispose();
 		
 		game.getLastMoveText().appendText('=' + choice.pieceChar);
+		game.addToLastMove({
+			type: 'transform',
+			pos: {x: choice.x, y: choice.y},
+			originalPiece: {side: choice.side, name: 'Pawn'}
+		});
 		this.hideDialog();
 
-		this.publishGameState();
-		// @TODO: Delay publication of game state on move, rather than publishing it twice
-		// like we're doing here. Unfortunately, it might be tricky to delay publication in the
-		// case that the game is awaiting dual inputs (i.e. waiting for power input and promotion
-		// input). Need to find an elegant solution for this. For now, just do this stupid
-		// thing.
+		// now we can end our turn
+		this.getCurrentPlayer().endTurn();
 	},
 
-	// moves
+	//
+	// MOVES
+	//
 	
 	/*
 	 * @params: txt = move text to display
@@ -616,9 +634,17 @@ var Game = new Class({
 	//
 	
 	/*
+	 * Attaches a messenger object for publish and poll requests
+	 */
+	attachMessenger: function(msgr) {
+		this.messenger = msgr;
+		this.messenger.start(this);
+	},
+	
+	/*
 	 * @return JSON object containing current game state
 	 */
-	exportGame: function() {
+	exportState: function() {
 		var exportedGame = {
 			gameVars: {
 				currentPlayer: this.currentPlayer,
@@ -632,14 +658,14 @@ var Game = new Class({
 					return piece.exportPiece();
 				})
 			},
-			graveyard: $$('#graveyard .piece').map(function(piece) {
-				return piece.object.exportPiece();
+			graveyard: $$('#graveyard .piece').map(function(pieceElt) {
+				return pieceElt.object.exportPiece();
 			}),
 			moves: $$('#moves tr').map(function (turn) {
 				return turn.getChildren().map(function (move) {
 					var text = move.getText().replace('+', 'plus');
-					
-                    return {
+
+					return {
 						text: text,
 						'class': move.getAttribute('class')
 					};
@@ -647,12 +673,8 @@ var Game = new Class({
 			})
 		};
 
-		if (this.lastPieceMoved) {
-			var piece = this.lastPieceMoved;
-			exportedGame.lastMove = new Array(
-				new Array(piece.x, piece.y),
-				new Array(piece.lastPosition.x, piece.lastPosition.y)
-			);
+		if (this.lastMove) {
+			exportedGame.lastMove = this.lastMove;
 		}
 
 		return exportedGame;
@@ -662,7 +684,7 @@ var Game = new Class({
 	 * @params gameState: JSON object containing game state
 	 * Imports game from JSON
 	 */
-	importGame: function(state) {
+	importState: function(state) {
 		var game = this;
 		
 		// reset things, in case this is called in the middle of a game
@@ -715,8 +737,8 @@ var Game = new Class({
 			});
 			$(tr).inject($('moves'));
 		});
-
-        // display last move
+		
+		// display last move
 
 		this.displayLastMove(state.lastMove, true);
 
@@ -735,6 +757,10 @@ var Game = new Class({
 		this.displayDescriptions();
 		
 		this.checkChecks();
+
+		// and start the current player's turn
+	
+		this.playerStart();
 	},
 	
 	/*
@@ -779,276 +805,231 @@ var Game = new Class({
 			this.startGame();
 		} else {
 			// Game already in progress
-			// We don't really need to do anything
+			game.getCurrentPlayer().startTurn();
 		}
 	},
 
 	/*
-	 * Publishes game state to server
+	 * Publishes game state via messenger
 	 */
 	publishGameState: function() {
-		if (local) return;
-
-		var publishRequest = new Request({
-			url: baseUrl + 'Games/SaveState/',
-			data: 'id=' + gameId 
-				+ '&state=' + JSON.stringify(this.exportGame())
-				+ '&turn=' + this.turnNum
-                + '&player=' + this.currentPlayer,
-			onSuccess: function (txt) {
-				numState++;
-			}
-		});
-
-		publishRequest.send();
-	},
-
-    /*
-     * @params winner: turn order of winning player
-     * Notifies server that the game has ended.
-     */
-    publishGameOver: function(winner) {
-        if (local) return;
-
-		var publishRequest = new Request({
-			url: baseUrl + 'Games/GameOver/',
-			data: 'id=' + gameId 
-				+ '&winner=' + winner
-		});
-
-		publishRequest.send();
-    },
-
-    /*
-     * @params loser: turn order of losing player
-     * Notifies server that a player has been defeated.
-     */
-    publishPlayerDefeated: function(loser) {
-        if (local) return;
-
-        var publishRequest = new Request({
-			url: baseUrl + 'Games/Defeated/',
-			data: 'id=' + gameId 
-				+ '&loser=' + loser
-		});
-
-		publishRequest.send();
-    },
-
-	/*
-	 * Polls server for new game state. If there is a new game state, imports it.
-	 */
-	pollGameState: function() {
-		if (local) return;
-
-		var game = this;
-
-		var pollRequest = new Request({
-			url: baseUrl + 'Games/PollState/',
-			data: 'id=' + gameId 
-				+ '&num_state=' + numState
-				+ '&num_chats=' + $$('#messages .msg').length,
-			onSuccess: function (txt) {
-				var data = JSON.parse(txt);
-				
-                numState = data.num;
-
-                if (data.stage > stage) {
-                    location.reload(true);
-                }
-
-				if (data.state) {
-					game.importGame(data.state);
-					game.tabNotification('movesTab');
-				}
-
-				if (data.chats) {
-					game.displayChat(data.chats);
-					game.tabNotification('chatTab');
-				}
-			}
-		});
-
-		pollRequest.send();
+		return this.messenger.sendState(this);	
 	},
 
 	/*
-	 * @params lastMove: array as created in Game.export()
-     *         animate: whether to animate the move
-	 * Highlights the last move made
+	 * @params winner: turn order of winning player
+	 * Notifies server that the game has ended.
 	 */
-	displayLastMove: function(lastMove, animate) {
-		if (lastMove) {
-			this.getSquares().each(function (square) {
-				if ((square.x == lastMove[0][0] && square.y == lastMove[0][1]) ||
-					(square.x == lastMove[1][0] && square.y == lastMove[1][1])) {
-						square.element.addClass('hoverLast');
-				} else {
-					square.element.removeClass('hoverLast');
-				}
-			});
-			
-			// animate move
-			if (animate) {
-				var dest = game.getSquare(lastMove[0][0], lastMove[0][1]);
-				var piece = dest.getPiece();
-				dest = $(piece.getSquare());
-				piece.x = lastMove[1][0]; piece.y = lastMove[1][1];
-				piece.refresh();
-				var mover = new Fx.Move($(piece), {
-					relativeTo: dest,
-					position: 'center',
-					edge: 'center',
-					offset: {x: -2, y: -2}
-				});
-				mover.start();
-				piece.x = lastMove[0][0]; piece.y = lastMove[0][1];
-			}
-		}
-	},
+  publishGameOver: function(winner) {
+		this.messenger.sendGameEvent({
+			type: 'gameOver',
+			player: winner
+		});
+  },
+
+	/*
+   * @params loser: turn order of losing player
+   * Notifies server that a player has been defeated.
+   */
+  publishPlayerDefeated: function(loser) {
+		this.messenger.sendGameEvent({
+			type: 'playerDefeated',
+			player: winner
+		});
+  },
 
 	/*
 	 * @return Whether the logged-in player can move
 	 */
 	amIUp: function() {
-		if (local) return true;
-
-		return (currentPlayer == this.getCurrentPlayer().userName);
+		return this.messenger.amIUp(this);
 	},
 
-    /*
-     * @params msg: Message to send
-     * Sends a chat message from the logged-in user
-     */
+	/*
+	 * Sends chat message via messenger
+	 */
 	sendChat: function(msg) {
-		var game = this;
-
-		var chatRequest = new Request({
-			url: baseUrl + 'Games/SendChat/',
-			data: 'id=' + gameId + '&msg=' + msg.replace(/"/g, "'"),
-			onSuccess: function (txt) {
-				game.displayChat (JSON.parse(txt));
-			}
-		});
-
-		chatRequest.send();
+		this.messenger.sendChat(this, msg);
 	},
 
-    /*
-     * @params msg: Message to send
-     * Sends an anonymous game-related chat message
-     */
-    sendGameMsg: function(msg) {
-        var game = this;
-
-		var chatRequest = new Request({
-			url: baseUrl + 'Games/SendGameMsg/',
-			data: 'id=' + gameId + '&msg=' + msg.replace(/"/g, "'"),
-			onSuccess: function (txt) {
-				game.displayChat (JSON.parse(txt));
-			}
-		});
-
-		chatRequest.send();
-    },
-
-    /*
-     * @params chat: array containing chat messages in the form [poster, text, timestamp]
-     * Displays an array of chat messages in the chat window
-     */
-	displayChat: function(chat) {
-		var game = this;
-
-		$('messages').clear();
-
-		chat.each(function (msg) {
-            var msgPoster = msg[0];
-            var msgText = msg[1];
-            var msgTime = msg[2] ? '[' + new Date(parseInt(msg[2]) * 1000).format('%m/%d %X') + '] ' : '';
-
-			var color = '';
-			var country = 'Guest';
-			
-            if (msgPoster == '**game**') {
-                var msgHtml = '<span class="gameMsg">' + msgTime + msgText + '</span>';
-			} else if (stage >= 2) {
-                var playerObj = game.players.filter(function (player) {
-					return (player.userName == msgPoster);
-				});
-
-				if (playerObj.length > 0) {
-					color = playerObj[0].color;
-					country = playerObj[0].countryDisplayName;
-				}
-
-				var msgHtml = '<span class="name ' + color + '">' + msgTime + msgPoster + ' (' + country + ') :</span> ' + msgText;
-			} else {
-				var msgHtml = '<span class="name">' + msgTime + msgPoster + ':</span> ' + msgText;
-			}
-
-			var msg = new Element('div.msg', {
-				html: msgHtml
-			});
-			msg.inject($('messages'));
-		});
-
-		$('messages').scrollTop = $('messages').scrollHeight; // scroll down
+	/*
+	 * @params msg: Message to send
+	 * Sends an anonymous game-related chat message
+	 */
+	sendGameMsg: function(msg) {
+		this.messenger.sendGameMsg(this, msg);
 	},
 
-    /*
-     * @params tab: ID of the tab to display a notification in
-     * Notifies the user that a tab has updated content
-     */
+	/*
+	 * @params tab: ID of the tab to display a notification in
+	 * Notifies the user that a tab has updated content
+	 */
 	tabNotification: function(tab) {
 		if (!$(tab).hasClass('active')) {
 			$(tab).addClass('notify');
 		}
 	},
+	
+	//
+	// ANIMATION
+	//
 
-    /*
-     * Resigns the game for the logged-in player
-     */
-    resign: function() {
-        var playerArr = this.players.filter (function (p) {
-            return p.userName == currentPlayer;
-        });
-        if (playerArr.length == 0) return;
-
-        var player = playerArr[0];
-        player.defeated();
-        this.publishGameState();
-        this.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') has resigned.');
-        this.publishPlayerDefeated(player.order);
-
-        $('resignButton').disabled = 'disabled';
-        if (this.amIUp()) {
-            this.nextPlayer();
-        }
-    },
-
-    /*
-     * Offers a draw as the logged-in player
-     */
-    offerDraw: function() {
-        var playerArr = this.players.filter (function (p) {
-            return p.userName == currentPlayer;
-        });
-        if (playerArr.length == 0) return;
-
-        var player = playerArr[0];
-        this.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') is offering a draw.');
-        player.offeringDraw = true;
-        this.publishGameState();
-        this.checkChecks();
-        
-        var drawRequest = new Request({
-			url: baseUrl + 'Games/OfferDraw/',
-			data: 'id=' + gameId
+	/*
+	 * @params lastMove: array as created in Game.export()
+	 *		 animate: whether to animate the move
+	 * Highlights the last move made
+	 */
+	displayLastMove: function(lastMove, animate) {
+		if (lastMove && lastMove.length > 0) {
+			this.clearMovedSquares();
+			console.log(lastMove);
+			
+			// break down into components (possibly > 1)
+			for (var i = 0; i < lastMove.length; i++) {
+				var move = lastMove[i];
+				
+				// mark squares
+				switch (move.type) {
+					case 'move':
+					case 'capture':
+						this.markSquareMoved(move.start.x, move.start.y);
+						this.markSquareMoved(move.dest.x, move.dest.y);
+						break;
+					case 'create':
+					case 'transform':
+					case 'decorate':
+						if (!move.noHighlight) {
+							this.markSquareMoved(move.pos.x, move.pos.y);
+						}
+						break;
+				}
+				
+				// animate move
+				if (animate) {
+					switch (move.type) {
+						case 'move':
+							this.animateMove(move.start, move.dest);
+							break;
+						case 'capture':
+							this.animateMove(move.start, move.dest);
+							this.animateCaptured(move.dest, move.capturedPiece);
+							break;
+						case 'create':
+							this.animateCreate(move.pos);
+							break;
+						case 'transform':
+							this.animateCreate(move.pos);
+							this.animateCaptured(move.pos, move.originalPiece);
+							break;
+						case 'decorate':
+							this.animateDecoration(move.pos, move.decoration);
+							break;
+					}
+				}
+			}
+		}
+	},
+	
+	/*
+	 * Helpers for displayLastMove
+	 */
+	
+	markSquareMoved: function(x, y) {
+		this.getSquares().each(function (square) {
+			if (square.x == x && square.y == y) {
+					square.element.addClass('hoverLast');
+			}
 		});
-        drawRequest.send();
-        
-        $('drawButton').disabled = 'disabled';
-    }
+	},
+	
+	clearMovedSquares: function() {
+		this.getSquares().each(function (square) {
+			square.element.removeClass('hoverLast');
+		});
+	},
+	
+	animateMove: function(start, dest) {
+		var destSquare = game.getSquare(dest.x, dest.y);
+		var piece = destSquare.getPiece();
+		destSquare = $(piece.getSquare());
+		piece.x = start.x; piece.y = start.y;
+		piece.refresh();
+		var mover = new Fx.Move($(piece), {
+			relativeTo: destSquare,
+			position: 'center',
+			edge: 'center',
+			offset: {x: -2, y: -2}
+		});
+		mover.start();
+		piece.x = dest.x; piece.y = dest.y;
+	},
+	
+	animateCaptured: function(pos, piece) {
+		var tempPiece = AbstractFactory.create(piece.name, [pos.x, pos.y, piece.side]);
+		$(tempPiece).inject('pieces');
+		
+		var fxTween = new Fx.Tween($(tempPiece), {'property': 'opacity'});
+		fxTween.start(0).chain(function(){ this.element.dispose();; });
+	},
+	
+	animateCreate: function(pos) {
+		var square = game.getSquare(pos.x, pos.y);
+		var piece = square.getPiece();
+		piece.element.tween('opacity', 0, 1);
+	},
+
+	animateDecoration: function(pos, decorClass) {
+		var square = game.getSquare(pos.x, pos.y);
+		var piece = square.getPiece();
+		piece.element.getChildren('.decorator.' + decorClass).tween('opacity', 0, 1);
+	},
+
+	//
+	// PLAYER COMMANDS
+	//
+	
+  /*
+   * Resigns the game for the logged-in player
+   */
+  resign: function() {
+	  var playerArr = this.players.filter (function (p) {
+		  return p.userName == currentPlayer;
+	  });
+	  if (playerArr.length == 0) return;
+
+	  var player = playerArr[0];
+	  player.defeated();
+	  this.publishGameState();
+	  this.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') has resigned.');
+	  this.publishPlayerDefeated(player.order);
+
+	  $('resignButton').disabled = 'disabled';
+	  if (this.amIUp()) {
+		  this.nextPlayer();
+	  }
+  },
+
+  /*
+   * Offers a draw as the logged-in player
+   */
+  offerDraw: function() {
+		var playerArr = this.players.filter (function (p) {
+			return p.userName == currentPlayer;
+		});
+		if (playerArr.length == 0) return;
+	
+		var player = playerArr[0];
+		this.sendGameMsg(player.userName + ' (' + player.countryDisplayName + ') is offering a draw.');
+		player.offeringDraw = true;
+		this.publishGameState();
+		this.checkChecks();
+		
+		this.messenger.sendGameEvent({
+				type: 'offerDraw'
+			});
+		  
+		$('drawButton').disabled = 'disabled';
+  }
 });
 
 var Player = new Class({
@@ -1063,8 +1044,9 @@ var Player = new Class({
 
 	check: false, // is the player currently in check?
 	inGame: true, // is the player currently in the game?
-    offeringDraw: false, // is the player currently offering a draw?
+	offeringDraw: false, // is the player currently offering a draw?
 	justDefeated: false, // was the player defeated within the last turn?
+	specialProperties: null, // used by some powers (e.g. Huns)
 	
 	setupPieces: [], // starting setup: 2-dimensional array, where the first row is the bottom row, etc.
 	promotionPieces: [], // stores pieces that the player's pawns can promote to, and the number that can
@@ -1139,14 +1121,14 @@ var Player = new Class({
 		
 		// if nobody defeated you (e.g. resign), your pieces just disappear
 
-        if (!defeatingPlayer) {
-            game.getPieces(this).each(function (piece) {
-                piece.captured();
-            })
-            return;
-        }
-        
-        // transfer possession
+		if (!defeatingPlayer) {
+			game.getPieces(this).each(function (piece) {
+				piece.captured();
+			})
+			return;
+		}
+		
+		// transfer possession
 		
 		game.getPieces(this).each(function (piece) {
 			piece.transferPossession(defeatingPlayer);
@@ -1192,8 +1174,7 @@ var Player = new Class({
 
 		// Skip turn if not in game
 		if (!this.inGame) {
-	 		game.displayMove('--');
-	   		game.nextPlayer();
+	 		game.skipTurn();
 			return;
 		}
 		
@@ -1213,7 +1194,7 @@ var Player = new Class({
 	afterMove: function(piece) {
 		this.lastMoveType = piece.moveType;
 		game.lastPieceMoved = piece;
-		return true;
+		return (!piece.waitingForInput); // e.g. promotion
 	},
 	
 	/*
@@ -1236,7 +1217,7 @@ var Player = new Class({
 	receivedPiece: function(piece) {
 		this.derivedPieces.each(function (derivedPiece) {
 			if (piece.pieceName == derivedPiece[0]) {
-				piece.transform(derivedPiece[1]);
+				piece.transform(derivedPiece[1], false);
 			}
 		});
 	},
@@ -1281,11 +1262,12 @@ var Player = new Class({
 			properties: {
 				check: this.check,
 				inGame: this.inGame,
-                offeringDraw: this.offeringDraw,
+				offeringDraw: this.offeringDraw,
 				justDefeated: this.justDefeated,
 				promotionPieces: this.promotionPieces,
 				lastMoveType: this.lastMoveType,
 				userName: this.userName,
+				specialProperties: this.specialProperties,
 			}
 		}
 	},
@@ -1681,6 +1663,8 @@ var Piece = new Class({
 	lastPosition: null, // the Square this piece was in last, or null
 	lastCapture: null, // the piece this piece captured last, or null
 	
+  element: null, // HTML element belonging to this piece
+	
 	drag: null, // drag event handler
 	moveType: 'normal', // used by: Pawn, King, etc
 	royal: false, // royal pieces: King
@@ -1701,7 +1685,7 @@ var Piece = new Class({
 		this.side = side;
 		this.color = game.players[side].color;
 		
-		this.element = new Element('img', {
+		this.element = new Element('div', {
 			'class': 'piece'
 		});
 		this.element.object = this;
@@ -1730,8 +1714,26 @@ var Piece = new Class({
 	 * Sets the piece's image
 	 */
 	setImage: function() {
+		var imageUrl = 'url(' + baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png)';
 		this.element.addClass(this.color);
-		this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
+		this.element.setStyle('background-image', imageUrl);
+	},
+	
+	/*
+	 * Adds a decorator image
+	 */
+	addDecorator: function(name) {
+		var decorator = new Element('div', {
+			'class': 'decorator ' + name
+		});
+		decorator.inject(this.element);
+	},
+	
+	/*
+	 * Removes a decorator image
+	 */
+	removeDecorator: function(name) {
+		this.element.getChildren('.decorator.' + name).destroy();
 	},
 	
 	/*
@@ -1889,10 +1891,16 @@ var Piece = new Class({
 		
 		// Handle capture, special move
 		
+		var verb, moveType;
 		this.lastCapture = null;
 		if (square.isOccupied()) {
+			moveType = 'capture';
 			verb = 'x';
-			this.capture(square.getPiece());
+			var capturedPiece = square.getPiece();
+			this.capture(capturedPiece);
+		} else {
+			moveType = 'move';
+			verb = '-';
 		}
 		
 		// Apply the move
@@ -1901,6 +1909,23 @@ var Piece = new Class({
 		this.x = square.x;
 		this.y = square.y;
 		this.refresh();
+		
+		// Record move in game
+		
+		var move = {
+			type: moveType,
+			start: {x: this.lastPosition.x, y: this.lastPosition.y},
+			dest: {x: this.x, y: this.y}
+		}
+		
+		if (moveType == 'capture') {
+			move.capturedPiece = {
+				side: capturedPiece.side,
+				name: capturedPiece.pieceName
+			};
+		}
+		
+		game.addToLastMove(move);
 
 		// Return algebraic notation
 		
@@ -1972,6 +1997,7 @@ var Piece = new Class({
 	 * @return the Piece that was created
 	 */
 	transferPossession: function(player) {
+		var oldSide = this.side;
 		this.element.removeClass(this.color);
 
 		this.side = player.order;
@@ -1979,22 +2005,37 @@ var Piece = new Class({
 		
 		this.setImage();
 		
-		var newPiece = this.transform(this.pieceName); // transform to base piece ...
+		var newPiece = this.transform(this.pieceName, false, oldSide); // transform to base piece ...
 		this.getOwner().receivedPiece(newPiece); // ... and possibly to player-specific piece
 		return newPiece;
 	},
 	
 	/*
 	 * @params: pieceName = class name of piece to transform into
+	 * 					highlight = whether to highlight the square after playback
+	 * 					oldSide = original side of the piece, if possession was transferred (used for animation)
 	 * "Transforms" this piece into a piece of the given type.
 	 * @return the Piece that was created
 	 */
-	transform: function(pieceName) {
+	transform: function(pieceName, highlight, oldSide) {
+		var originalPiece = {
+			name: this.pieceName, 
+			side: oldSide || this.side
+		};
+		
 		this.element.dispose();
 		
 		var newPiece = AbstractFactory.create(pieceName, [this.x, this.y, this.side]);
 		$(newPiece).inject('pieces');
 		newPiece.specialProperties = this.specialProperties;
+		
+		game.addToLastMove({
+			type: 'transform',
+			pos: {x: this.x, y: this.y},
+			originalPiece: originalPiece,
+			noHighlight: (!highlight)
+		});
+		
 		return newPiece;
 	},
 	

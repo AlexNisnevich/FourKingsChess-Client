@@ -14,8 +14,9 @@ var Pawn = new Class({
 	},
 	
 	setImage: function() {
+		var imageUrl = 'url(' + baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png)';
 		this.element.addClass(this.color);
-		this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '_' + this.direction + '.png');
+		this.element.setStyle('background-image', imageUrl);
 	},
 	
 	canMove: function(square) {
@@ -32,6 +33,7 @@ var Pawn = new Class({
 				(this.getOwner().promotionPieces.length != 0)) {
 					this.promote();
 		}
+		return true;
 	},
 	
 	transform: function(pieceName) {
@@ -46,6 +48,8 @@ var Pawn = new Class({
 	promote: function() {
 		var pawn = this;
 		var owner = pawn.getOwner();
+		
+		pawn.waitingForInput = true;
 		
 		new Element('div.dialogTitle', {html: 'Select a piece to promote to.'}).inject($('dialog'));
 		
@@ -306,24 +310,20 @@ var GreecePiece = new Class({
 		this.moveType = 'normal';
 		if (this.getSquare().inTwoByFour() == this.side) {
 			return this.getSquare().isKingMove(square, this.side);
-		}
-		else if (this.getSquare().inThreeByFive() == this.side) {
+		} else if (this.getSquare().inThreeByFive() == this.side) {
 			return this.getSquare().isBishopJump(square, this.side, 2);
-		}
-		else if (this.getSquare().inCenterTwoByTwo() == true) {
+		} else if (this.getSquare().inCenterTwoByTwo() == true) {
 			if (this.getSquare().isRookJump(square, this.side, 1)
 					&& square.isOccupied()
 					&& !square.isOccupied(this.side)) {
 				this.moveType = 'shoot';
 				return true;
-			}else {
+			} else {
 				return false;
 			}
 		}
-		else {
-			return this.parent(square);
-		}
 	},
+	
 	greeceHasMoved: function(){
 		if (this.moveType == 'shoot') {
 			this.moveTo(this.lastPosition, 'normal');
@@ -621,8 +621,9 @@ var MongolPawn =  new Class({
 	},
 	
 	setImage: function() {
+		var imageUrl = 'url(' + baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png)';
 		this.element.addClass(this.color);
-		this.element.setProperty('src', baseUrl + 'images/pieces/' + this.pieceName + '_' + this.color + '.png');
+		this.element.setStyle('background-image', imageUrl);
 	}
 });
 

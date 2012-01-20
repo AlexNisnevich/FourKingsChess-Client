@@ -9,11 +9,9 @@
   "text/html; charset=us-ascii">
 
   <title>Euro Chess</title>
-  <link id="agtzfmNzc2ZpZGRsZXIMCxIEUGFnZRiqsAcM" rel="stylesheet"
-  type="text/css" href=
-  "http://www.webputty.net/css/agtzfmNzc2ZpZGRsZXIMCxIEUGFnZRiqsAcM">
-  <script type="text/javascript" src=
-  "http://www.webputty.net/js/agtzfmNzc2ZpZGRsZXIMCxIEUGFnZRiqsAcM">
+
+  <link rel="stylesheet" type="text/css" href="http://www.webputty.net/css/agtzfmNzc2ZpZGRsZXIMCxIEUGFnZRibsBIM" />
+<script type="text/javascript">(function(w,d){if(w.location!=w.parent.location||w.location.search.indexOf('__preview_css__')>-1){var t=d.createElement('script');t.type='text/javascript';t.async=true;t.src='http://www.webputty.net/js/agtzfmNzc2ZpZGRsZXIMCxIEUGFnZRibsBIM';(d.body||d.documentElement).appendChild(t);}})(window,document);</script>
 </script>
 </head>
 
@@ -51,22 +49,22 @@
 	            Red: <select id="selectRed">
 	              </select>
 	          </div>
-	
+
 	          <div class="selectCountry green" style="margin: 1em 5em;">
 	            Green: <select id="selectGreen">
 	              </select>
 	          </div>
-	
+
 	          <div class="selectCountry yellow" style="margin: 1em 5em;">
 	            Yellow: <select id="selectYellow">
 	              </select>
 	          </div>
-	
+
 	          <div class="selectCountry blue" style="margin: 1em 5em;">
 	            Blue: <select id="selectBlue">
 	              </select>
 	          </div>
-	
+
 	          <div class="buttonContainer">
 	            <button id="startButton">Start Game</button>
 	          </div>
@@ -76,24 +74,24 @@
 	        <table id="moves">
 	          <tr>
 	            <td class="num">#</td>
-	
+
 	            <td class="move heading red"></td>
-	
+
 	            <td class="move heading green"></td>
-	
+
 	            <td class="move heading yellow"></td>
-	
+
 	            <td class="move heading blue"></td>
 	          </tr>
-	
-	
-	
-	
-	
-	
-	
+
+
+
+
+
+
+
 	        </table>
-	
+
 	        <div id="outcome"></div>
         </div>
       </div>
@@ -114,15 +112,34 @@
 	<div id="dialog"></div>
 </div>
 
-<script type="text/javascript" src=
-  "https://ajax.googleapis.com/ajax/libs/mootools/1.3.2/mootools-yui-compressed.js">
-</script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/mootools/1.3.2/mootools-yui-compressed.js"></script>
 <script type="text/javascript" src= "js/moo/mootools-more-1.3.2.1.js"></script>
 <script type="text/javascript" src="js/moo/TabPane.js"></script>
 <script type="text/javascript" src="js/game.js"></script>
+<script type="text/javascript" src="js/messenger.js"></script>
 <script type="text/javascript" src="js/countries.js"></script>
 <script type="text/javascript" src="js/pieces.js"></script>
 <script type="text/javascript" src="js/start.js"></script>
+<script type="text/javascript">
+	// Initialize local messenger
+	var messenger = new LocalMessenger();
+	game.attachMessenger(messenger);
+	
+	// Start button (local only)
+	if ($('startButton')) {
+		$('startButton').addEvent('click', function() {
+			if ($$('#setup select').every(function (dropdown) {
+				return (dropdown.getSelected()[0].value != '');
+			})) {
+					game.addPlayer($('selectRed').getSelected()[0].value, 'red');
+					game.addPlayer($('selectGreen').getSelected()[0].value, 'green');
+					game.addPlayer($('selectYellow').getSelected()[0].value, 'yellow');
+					game.addPlayer($('selectBlue').getSelected()[0].value, 'blue');
+					game.startGame();
+			}
+		});
+	}
+</script>
 
 </body>
 </html>

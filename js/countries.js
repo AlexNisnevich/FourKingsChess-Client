@@ -1,3 +1,16 @@
+// Country lists
+
+var countries = ['AncientGreece', 'Athens', 'Aztecs', 'Britain', 'ByzantineEmpire',
+				 'Conquistadors', 'Huns', 'Hurons', 'Incas', 'Jerusalem', 
+				 'Macedonia', 'MedievalBritain', 'Mongols', 'PapalStates', 'Sparta', 
+				 'Transylvania'];
+
+var countriesAncient = ['AncientGreece', 'Athens', 'Huns', 'Macedonia', 'Sparta'];
+var countriesMedieval = ['Aztecs', 'ByzantineEmpire', 'Conquistadors', 'Incas', 'Jerusalem', 
+						 'MedievalBritain', 'Mongols'];
+var countriesEnlightenment = ['Britain', 'Hurons', 'PapalStates'];
+var countriesFantasy = ['Transylvania'];
+
 // DefaultCountry is really only for test purposes - default setup, with no powers
 var DefaultCountry = new Class({
 	Extends: Player,
@@ -70,25 +83,27 @@ var Aztecs = new Class({
 
 	startTurn: function () {
 		this.parent();
-		var player = this;
-		game.promptSimple('Select a knight or rook to transform, if you wish to transform a piece instead of moving this turn.',
-			'piece',
-			'confirmCancel',
-			function (piece) {
-				return (piece.side == player.order && (piece.pieceClass == 'Rook' || piece.pieceClass == 'Knight'));
-			},
-			function (piece) {
-				if (piece.pieceClass == 'Knight'){
-					piece.transform('Rook');
-					game.displayMove('N' + piece.getSquare().toString() + '=R');
-				} else if (piece.pieceClass == 'Rook'){
-					piece.transform('Knight');
-					game.displayMove('R' + piece.getSquare().toString() + '=N');
+
+		if (game.amIUp()) {
+			var player = this;
+			game.promptSimple('Select a knight or rook to transform, if you wish to transform a piece instead of moving this turn.',
+				'piece',
+				'confirmCancel',
+				function (piece) {
+					return (piece.side == player.order && (piece.pieceClass == 'Rook' || piece.pieceClass == 'Knight'));
+				},
+				function (piece) {
+					if (piece.pieceClass == 'Knight') {
+						piece.transform('Rook', true);
+						game.displayMove('N' + piece.getSquare().toString() + '=R');
+					} else if (piece.pieceClass == 'Rook') {
+						piece.transform('Knight', true);
+						game.displayMove('R' + piece.getSquare().toString() + '=N');
+					}
+					player.endTurn();
 				}
-				player.endTurn();
-			},
-			true
-		);
+			);
+		}
 	}
 });
 
@@ -130,36 +145,39 @@ var ByzantineEmpire = new Class({
 	}
 });
 
-var Conquistadors = new Class ({
+var Conquistadors = new Class({
 	Extends: Player,
 
-    countryName: 'Conquistadors',
+	countryName: 'Conquistadors',
 	power: 'power of disease',
-	
-	startTurn: function(order, color){
-		var player = this;
-		
-		this.getPieces().filter(function(piece) {
-			return (piece.pieceClass != 'Pawn');
-		}).each(function(piece) {
-			game.getPieces(game.getOtherPlayers(player.order), null, -1).filter(function (targetPiece) {
-				return (targetPiece.getSquare().distance(piece.getSquare()) == 1) && 
-					!targetPiece.specialProperties.protectedFromSpecialAbilityCapture;
-			}).each(function (targetPiece) {
+
+	startTurn: function (order, color) {
+		this.parent();
+
+		if (game.amIUp() == this.userName) {
+			var player = this;
+			this.getPieces().filter(function (piece) {
+				return (piece.pieceClass != 'Pawn');
+			}).each(function (piece) {
+				game.getPieces(game.getOtherPlayers(player.order), null, -1).filter(function (targetPiece) {
+					return (targetPiece.getSquare().distance(piece.getSquare()) == 1) &&
+						!targetPiece.specialProperties.protectedFromSpecialAbilityCapture;
+				}).each(function (targetPiece) {
 					targetPiece.captured();
 					game.displayMove('[' + targetPiece.getSquare().toString() + '], ');
+				});
 			});
-		});
+		}
 	},
-	
-    initialize: function (order, color) {
-        this.parent(order, color);
-        this.description = 'At the start of your turn, if any opponent’s non-royal piece is horizontally or vertically adjacent to your bishop, knight, or king, destroy the enemy piece.';
-        this.setupPieces = [['Bishop', 'King', 'Pawn'],
-		                    ['Pawn', 'Pawn', 'Knight']];
-        this.promotionPieces = [['Knight', 0],
+
+	initialize: function (order, color) {
+		this.parent(order, color);
+		this.description = 'At the start of your turn, if any opponentï¿½s non-royal piece is horizontally or vertically adjacent to your bishop, knight, or king, destroy the enemy piece.';
+		this.setupPieces = [['Bishop', 'King', 'Pawn'],
+							['Pawn', 'Pawn', 'Knight']];
+		this.promotionPieces = [['Knight', 0],
 								['Bishop', 0]];
-    }
+	}
 });
 
 var Huns = new Class({
@@ -168,7 +186,7 @@ var Huns = new Class({
 	countryName: 'Huns',
 	power: 'power of tribute',
 
-	hasUsed: false,
+	specialProperties: { hasUsed: false },
 
 	initialize: function (order, color) {
 		this.parent(order, color);
@@ -179,30 +197,37 @@ var Huns = new Class({
 								['Knight', 0],
 								['Bishop', 0]];
 	},
+	
 	startTurn: function () {
 		this.parent();
-		var player = this;
-		if (this.hasUsed == false) {
-			game.promptSimple('Select a square to place a pawn, if you wish to place a pawn instead of moving this turn.',
-				'square',
-				'confirmCancel',
-				function (square) {
-					return ((square.inThreeByFive() == player.order) && !square.isOccupied());
-				},
-				function (square) {
-					var pawn = AbstractFactory.create('Pawn', [square.x, square.y, player.order]);
-					$(pawn).inject($('pieces'));
-					
-					player.hasUsed = true;
-					player.endTurn();
-				},
-				true
-			);
-		}
-		else {
-			this.hasUsed = false;
-		}
 
+		if (game.amIUp()) {
+			var player = this;
+			if (this.specialProperties.hasUsed == false) {
+				game.promptSimple('Select a square to place a pawn, if you wish to place a pawn instead of moving this turn.',
+					'square',
+					'confirmCancel',
+					function (square) {
+						return ((square.inThreeByFive() == player.order) && !square.isOccupied());
+					},
+					function (square) {
+						var pawn = AbstractFactory.create('Pawn', [square.x, square.y, player.order]);
+						$(pawn).inject($('pieces'));
+						
+						game.addToLastMove({
+							type: 'create',
+							pos: {x: square.x, y: square.y}
+						});
+
+						player.specialProperties.hasUsed = true;
+						player.endTurn();
+					}
+				);
+			}
+			else {
+				this.specialProperties.hasUsed = false;
+			}
+		}
 	}
 });
 
@@ -228,7 +253,7 @@ var Hurons = new Class({
 var Incas = new Class ({
 	Extends: Player,
 
-    countryName: 'Incas',
+  countryName: 'Incas',
 	power: 'power of manipulation',
 	
 	startTurn: function(order, color){
@@ -243,13 +268,13 @@ var Incas = new Class ({
 		});
 	},
 	
-    initialize: function (order, color) {
-        this.parent(order, color);
-        this.description = 'Delegates <img src="' + baseUrl + 'images/pieces/Delegate_' + color + '.png" align="bottom"> can move like kings or jump two squares horizontally or vertically. Whenever a delegate starts a turn horizontally or vertically adjacent to a nonroyal enemy piece, take control of that piece.';
-        this.setupPieces = [['King', 'Delegate', 'Delegate'],
-		                    ['Pawn', 'Pawn', 'Pawn']];
-        this.promotionPieces = [['Delegate', 0]];
-    }
+  initialize: function (order, color) {
+	this.parent(order, color);
+	this.description = 'Delegates <img src="' + baseUrl + 'images/pieces/Delegate_' + color + '.png" align="bottom"> can move like kings or jump two squares horizontally or vertically. Whenever a delegate starts a turn horizontally or vertically adjacent to a nonroyal enemy piece, take control of that piece.';
+	this.setupPieces = [['King', 'Delegate', 'Delegate'],
+					['Pawn', 'Pawn', 'Pawn']];
+	this.promotionPieces = [['Delegate', 0]];
+  }
 });
 
 var Jerusalem = new Class({
@@ -271,10 +296,12 @@ var Jerusalem = new Class({
 	startTurn: function () {
 		this.parent();
 
-		this.getPieces().each(function (piece) {
-			piece.specialProperties.castle = false;
-			piece.element.removeClass('castle');
-		});
+		if (game.amIUp()) {
+			this.getPieces().each(function (piece) {
+				piece.specialProperties.castle = false;
+				piece.removeDecorator('castle');
+			});
+		}
 	},
 
 	afterMove: function (movedPiece) {
@@ -289,10 +316,18 @@ var Jerusalem = new Class({
 			},
 			function (piece) {
 				piece.specialProperties.castle = true;
-				piece.element.addClass('castle');
+				piece.addDecorator('castle');
+				
 				game.getLastMoveText().appendText(', [' +
 						piece.pieceChar + piece.getSquare().toString() + ']');
-			}
+				game.addToLastMove({
+					type: 'decorate',
+					pos: {x: piece.x, y: piece.y},
+					decoration: 'castle'
+				});
+				game.getCurrentPlayer().endTurn();
+			},
+			true
 		);
 		return false;
 	},
