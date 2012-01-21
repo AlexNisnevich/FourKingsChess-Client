@@ -526,20 +526,37 @@ var MacedoniaPawn = new Class({
 
 // Medieval Britain
 
-var MafiaPiece = new Class ({
+var MedievalBritainPiece = new Class ({
 	hasMoved: function(){
 		if (this.lastCapture != null){
-			this.moveTo(this.lastPosition, 'normal');
+			var shootMove = {
+				type: 'shoot',
+				start: {x: this.lastPosition.x, y: this.lastPosition.y},
+				dest: {x: this.x, y: this.y},
+				piece: {
+					name: this.pieceName, 
+					side: this.side
+				},
+				capturedPiece: {
+					name: this.lastCapture.pieceName, 
+					side: this.lastCapture.side
+				}
+			}
+			
+			this.moveTo(this.lastPosition);
+			
+			game.clearLastMove();
+			game.addToLastMove(shootMove);
 			game.getLastMoveText().appendText(' (sh)');
 			game.lastPieceMoved = null;
 		}
 	}
 });
 
-var MafiaRook = new Class ({
+var MedievalBritainRook = new Class ({
 	Extends: Rook,
-	Implements: MafiaPiece,
-	pieceClass: 'MafiaRook',
+	Implements: MedievalBritainPiece,
+	pieceClass: 'MedievalBritainRook',
 	
 	canMove: function(square){
 		return this.getSquare().isRookMove(square, this.side, 3);
@@ -550,10 +567,10 @@ var MafiaRook = new Class ({
 	}
 });
 
-var MafiaBishop = new Class ({
+var MedievalBritainBishop = new Class ({
 	Extends: Bishop,
-	Implements: MafiaPiece,
-	pieceClass: 'MafiaBishop',
+	Implements: MedievalBritainPiece,
+	pieceClass: 'MedievalBritainBishop',
 	
 	canMove: function(square){
 		return this.getSquare().isBishopMove(square, this.side, 3);
@@ -564,30 +581,30 @@ var MafiaBishop = new Class ({
 	}	
 });
 
-var MafiaKnight = new Class ({
+var MedievalBritainKnight = new Class ({
 	Extends: Knight,
-	Implements: MafiaPiece,
-	pieceClass: 'MafiaKnight',
+	Implements: MedievalBritainPiece,
+	pieceClass: 'MedievalBritainKnight',
 	
 	afterMove: function() {
 		this.hasMoved();
 	}
 });
 
-var MafiaKing = new Class ({
+var MedievalBritainKing = new Class ({
 	Extends: King,
-	Implements: MafiaPiece,
-	pieceClass: 'MafiaKing',
+	Implements: MedievalBritainPiece,
+	pieceClass: 'MedievalBritainKing',
 	
 	afterMove: function() {
 		this.hasMoved();
 	}	
 });
 
-var MafiaPawn = new Class ({
+var MedievalBritainPawn = new Class ({
 	Extends: Pawn,
-	Implements: MafiaPiece,
-	pieceClass: 'MafiaPawn',
+	Implements: MedievalBritainPiece,
+	pieceClass: 'MedievalBritainPawn',
 	
 	afterMove: function() {
 		this.hasMoved();

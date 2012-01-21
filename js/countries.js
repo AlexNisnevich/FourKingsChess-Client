@@ -172,7 +172,7 @@ var Conquistadors = new Class({
 
 	initialize: function (order, color) {
 		this.parent(order, color);
-		this.description = 'At the start of your turn, if any opponent�s non-royal piece is horizontally or vertically adjacent to your bishop, knight, or king, destroy the enemy piece.';
+		this.description = 'At the start of your turn, if any opponent\'s non-royal piece is horizontally or vertically adjacent to your bishop, knight, or king, destroy the enemy piece.';
 		this.setupPieces = [['Bishop', 'King', 'Pawn'],
 							['Pawn', 'Pawn', 'Knight']];
 		this.promotionPieces = [['Knight', 0],
@@ -373,15 +373,15 @@ var MedievalBritain = new Class({
 	initialize: function (order, color) {
 		this.parent(order, color);
 		this.description = 'Your pieces capture without moving. Your bishops and rooks may only move up to three squares each turn.';
-		this.setupPieces = [['MafiaKing', 'MafiaRook', 'MafiaBishop', 'MafiaKnight'], 
-							['MafiaPawn', 'MafiaPawn', 'MafiaPawn', 'MafiaPawn']];
-		this.promotionPieces = [['MafiaRook', 0],
-								['MafiaBishop', 0]
-								['MafiaKnight', 0]];
-		this.derivedPieces = [['Rook', 'MafiaRook'],
-							   ['Bishop', 'MafiaBishop'],
-							   ['Knight', 'MafiaKnight']
-							   ['Pawn', 'MafiaPawn']];
+		this.setupPieces = [['MedievalBritainKing', 'MedievalBritainRook', 'MedievalBritainBishop', 'MedievalBritainKnight'], 
+							['MedievalBritainPawn', 'MedievalBritainPawn', 'MedievalBritainPawn', 'MedievalBritainPawn']];
+		this.promotionPieces = [['MedievalBritainRook', 0],
+								['MedievalBritainBishop', 0]
+								['MedievalBritainKnight', 0]];
+		this.derivedPieces = [['Rook', 'MedievalBritainRook'],
+							   ['Bishop', 'MedievalBritainBishop'],
+							   ['Knight', 'MedievalBritainKnight']
+							   ['Pawn', 'MedievalBritainPawn']];
 	}
 });
 

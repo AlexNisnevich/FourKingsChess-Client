@@ -256,6 +256,14 @@ var Game = new Class({
 		this.lastMove.push(moveObj);
 	},
 	
+	
+	/*
+	 * clear lastMove array (used for powers such as Med. Britain that affect how moves work)
+	 */
+	clearLastMove: function() {
+		this.lastMove = [];
+	},
+	
 	//
 	// $$ WRAPPERS
 	//
@@ -931,6 +939,8 @@ var Game = new Class({
 							this.animateCreate(move.dest);
 							break;
 						case 'shoot':
+							this.animateShoot(move.start, move.dest);
+							this.animateCaptured(move.dest, move.capturedPiece);
 							break;
 					}
 				}
@@ -990,6 +1000,30 @@ var Game = new Class({
 		var square = game.getSquare(pos.x, pos.y);
 		var piece = square.getPiece();
 		piece.element.getChildren('.decorator.' + decorClass).tween('opacity', 0, 1);
+	},
+	
+	animateShoot: function(start, dest) {
+		var startSquare = game.getSquare(start.x, start.y);
+		var destSquare = game.getSquare(dest.x, dest.y);
+		var piece = startSquare.getPiece();
+		startSquare = $(piece.getSquare());
+		destSquare = $(destSquare);
+		piece.x = start.x; piece.y = start.y;
+		piece.refresh();
+		
+		var moverForward = new Fx.Move($(piece), {
+			relativeTo: destSquare,
+			position: 'center',
+			edge: 'center',
+			offset: {x: -2, y: -2}
+		});
+		var moverBackward = new Fx.Move($(piece), {
+			relativeTo: startSquare,
+			position: 'center',
+			edge: 'center',
+			offset: {x: -2, y: -2}
+		});
+		moverForward.start().chain(function () {moverBackward.start()});
 	},
 
 	//
@@ -1890,7 +1924,7 @@ var Piece = new Class({
 	 * @return move's algebraic notation
 	 * Moves the piece to the given square, handles capture if there is any.
 	 */
-	moveTo: function(square, type) {
+	moveTo: function(square) {
 		// Set up algebraic notation
 		
 		var startStr = this.getSquare().toString();
