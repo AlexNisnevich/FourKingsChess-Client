@@ -892,6 +892,8 @@ var Game = new Class({
 				switch (move.type) {
 					case 'move':
 					case 'capture':
+					case 'teleport':
+					case 'shoot':
 						this.markSquareMoved(move.start.x, move.start.y);
 						this.markSquareMoved(move.dest.x, move.dest.y);
 						break;
@@ -923,6 +925,12 @@ var Game = new Class({
 							break;
 						case 'decorate':
 							this.animateDecoration(move.pos, move.decoration);
+							break;
+						case 'teleport':
+							this.animateCaptured(move.start, move.piece);
+							this.animateCreate(move.dest);
+							break;
+						case 'shoot':
 							break;
 					}
 				}
@@ -1899,7 +1907,7 @@ var Piece = new Class({
 			var capturedPiece = square.getPiece();
 			this.capture(capturedPiece);
 		} else {
-			moveType = 'move';
+			moveType = (this.moveType != 'normal') ? this.moveType : 'move';
 			verb = '-';
 		}
 		
@@ -1915,7 +1923,11 @@ var Piece = new Class({
 		var move = {
 			type: moveType,
 			start: {x: this.lastPosition.x, y: this.lastPosition.y},
-			dest: {x: this.x, y: this.y}
+			dest: {x: this.x, y: this.y},
+			piece: {
+				name: this.pieceName, 
+				side: this.side
+			}
 		}
 		
 		if (moveType == 'capture') {
