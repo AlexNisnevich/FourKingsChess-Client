@@ -376,11 +376,11 @@ var MedievalBritain = new Class({
 		this.setupPieces = [['MedievalBritainKing', 'MedievalBritainRook', 'MedievalBritainBishop', 'MedievalBritainKnight'], 
 							['MedievalBritainPawn', 'MedievalBritainPawn', 'MedievalBritainPawn', 'MedievalBritainPawn']];
 		this.promotionPieces = [['MedievalBritainRook', 0],
-								['MedievalBritainBishop', 0]
+								['MedievalBritainBishop', 0],
 								['MedievalBritainKnight', 0]];
 		this.derivedPieces = [['Rook', 'MedievalBritainRook'],
 							   ['Bishop', 'MedievalBritainBishop'],
-							   ['Knight', 'MedievalBritainKnight']
+							   ['Knight', 'MedievalBritainKnight'],
 							   ['Pawn', 'MedievalBritainPawn']];
 	}
 });
@@ -427,10 +427,11 @@ var Sparta = new Class({
 	countryName: 'Sparta',
 	power: 'power of mastery',
 	
-	initialize:function (order, color) {
+	initialize: function (order, color) {
 		this.parent(order, color);
 		this.description = 'The warrior <img src="' + baseUrl + 'images/pieces/SpartaWarrior_' + color + '.png" align="bottom"> can move as a queen and as a knight, and cannot be moved or destroyed as a result of other players\' special abilities. You may not have more than one warrior at a time. Your pawns can promote to a rook, knight, bishop or warrior.';
-		this.setupPieces = [['King', 'SpartaWarrior', 'Pawn', 'Pawn'], ['Pawn', 'Pawn', 'Pawn', 'Pawn']];
+		this.setupPieces = [['King', 'SpartaWarrior', 'Pawn', 'Pawn'], 
+							['Pawn', 'Pawn', 'Pawn', 'Pawn']];
 		this.promotionPieces = [['SpartaWarrior', 1],
 								['Rook', 0], 
 								['Bishop', 0], 
