@@ -599,54 +599,6 @@ var Game = new Class({
 	// MOVES
 	//
 	
-	squareToString: function(coords) {
-		return String.fromCharCode('a'.charCodeAt(0) - 1 + coords.x) + coords.y;
-	},
-	
-	displayMoves: function() {
-		var moveTxt = [];
-		var moved = false;
-		for (i = 0; i < this.lastMove.length; i++) {
-			var move = this.lastMove[i];
-			var newMove = null;
-			switch (move.type) {
-				case 'move':
-					newMove = this.squareToString(move.start) + '-' + this.squareToString(move.dest);
-					moved = true;
-					break;
-				case 'capture':
-					newMove = this.squareToString(move.start) + 'x' + this.squareToString(move.dest);
-					moved = true;
-					break;
-				case 'create':
-					newMove = '[' + this.squareToString(move.pos) + ']';
-					break;
-				case 'transform':
-					if (!move.noHighlight) {
-						if (moved) {
-							newMove = moveTxt.pop() + '=' + move.originalPiece.pieceName;
-						} else {
-							newMove = '[' + this.squareToString(move.pos) + ']';
-						}
-					}
-					break;
-				case 'decorate':
-					newMove = '[' + this.squareToString(move.pos) + ']';
-					break;
-				case 'teleport':
-					newMove = this.squareToString(move.start) + '-' + this.squareToString(move.dest) + ' (t)';
-					moved = true;
-					break;
-				case 'shoot':
-					newMove = this.squareToString(move.start) + 'x' + this.squareToString(move.dest) + ' (sh)';
-					moved = true;
-					break;
-			}
-			moveTxt.push(newMove);
-		}
-		console.log(moveTxt);
-	},
-	
 	/*
 	 * @params: txt = move text to display
 	 * Displays the given text on the move table
