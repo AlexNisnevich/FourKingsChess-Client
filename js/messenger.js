@@ -14,6 +14,7 @@ var LocalMessenger = new Class({
 	Extends: Messenger,
 	
 	sendState: function(game) {
+		game.displayMoves();
 		var gameState = game.exportState();
 		game.displayLastMove(gameState.lastMove, true);
 	},
