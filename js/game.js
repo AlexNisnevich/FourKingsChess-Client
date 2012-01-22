@@ -157,11 +157,11 @@ var Game = new Class({
 			description.inject($('descriptions'));
 		});
 
-	// set game height based on descriptions height
-	var baseHeight = parseInt($('gameContainer').getStyle('min-height'));
-	var descriptionsHeight = parseInt($('descriptions').getStyle('height'));
-	var totalHeight = (baseHeight + descriptionsHeight) + 'px';
-	$('gameContainer').setStyle('height', totalHeight);
+		// set game height based on descriptions height
+		var baseHeight = parseInt($('gameContainer').getStyle('min-height'));
+		var descriptionsHeight = parseInt($('descriptions').getStyle('height'));
+		var totalHeight = (baseHeight + descriptionsHeight) + 'px';
+		$('gameContainer').setStyle('height', totalHeight);
 	},
 	
 	//
@@ -598,7 +598,7 @@ var Game = new Class({
 	//
 	// MOVES
 	//
-	
+
 	/*
 	 * @params: txt = move text to display
 	 * Displays the given text on the move table
