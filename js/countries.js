@@ -218,6 +218,7 @@ var Huns = new Class({
 							type: 'create',
 							pos: {x: square.x, y: square.y}
 						});
+						game.displayMove('[' + square.toString() + ']');
 
 						player.specialProperties.hasUsed = true;
 						player.endTurn();
